@@ -1,0 +1,583 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>ETHUSDT Signal Board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: one narrow trading column — verdict block first, the 9-row indicator ledger under it, manual inputs last. */
+:root {
+  --bg: #eef2f0; --panel: #ffffff; --fg: #14201c; --muted: #5a6964; --line: #d3dbd7;
+  --accent: #a85a24; --long: #1c7f53; --short: #bf3434; --long-soft: #dcefe5; --short-soft: #f6dddd;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-data: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0e1513; --panel: #151e1b; --fg: #e3eae7; --muted: #8b9a95; --line: #26332f;
+  --accent: #e39a5f; --long: #43c08a; --short: #ef6b6b; --long-soft: #173329; --short-soft: #3a1d1e; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0e1513; --panel: #151e1b; --fg: #e3eae7; --muted: #8b9a95; --line: #26332f;
+  --accent: #e39a5f; --long: #43c08a; --short: #ef6b6b; --long-soft: #173329; --short-soft: #3a1d1e; color-scheme: dark }
+body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 15px; line-height: 1.5; }
+.wrap { max-width: 760px; margin: 0 auto; padding-inline: 16px; padding-block: 24px 48px; display: grid; gap: 20px; }
+header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 16px; }
+h1 { margin: 0; font-family: var(--font-data); font-size: 22px; font-weight: 600; letter-spacing: 0.02em; text-wrap: balance; }
+h1 small { font-family: var(--font-body); font-size: 13px; font-weight: 400; color: var(--muted); letter-spacing: 0; margin-left: 8px; }
+.meta { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); display: inline-block; margin-right: 6px; vertical-align: 1px; }
+.dot.live { background: var(--long); }
+.dot.stale { background: var(--accent); }
+button { font: inherit; font-size: 13px; font-weight: 500; color: var(--fg); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+button:hover { border-color: var(--accent); }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button:disabled { opacity: 0.55; cursor: progress; }
+
+.verdict { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 20px; display: grid; gap: 16px; }
+.lines { font-family: var(--font-data); font-variant-numeric: tabular-nums; display: grid; gap: 6px; font-size: 16px; }
+.line { display: grid; grid-template-columns: 9.5em 1fr; gap: 8px; min-width: 0; }
+.line .k { color: var(--muted); }
+.line .v { min-width: 0; overflow-wrap: anywhere; }
+.line .v b { font-weight: 600; }
+.line .v em { font-style: normal; color: var(--muted); font-family: var(--font-body); font-size: 13px; }
+.price { font-size: 30px; font-weight: 600; line-height: 1.1; }
+.bar { display: flex; height: 34px; border-radius: 6px; overflow: hidden; font-family: var(--font-data); font-weight: 600; font-size: 14px; }
+.bar div { display: flex; align-items: center; padding-inline: 10px; transition: flex-basis 0.6s ease; min-width: 0; white-space: nowrap; }
+.bar .L { background: var(--long-soft); color: var(--long); }
+.bar .S { background: var(--short-soft); color: var(--short); justify-content: flex-end; }
+.bias { font-size: 14px; color: var(--muted); }
+.bias b { color: var(--fg); font-weight: 600; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+h2 { margin: 0 0 8px; font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.ledger { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+tr:last-child td { border-bottom: 0; }
+th { font-size: 12px; font-weight: 500; color: var(--muted); }
+td.n, td.tf { font-family: var(--font-data); color: var(--muted); white-space: nowrap; }
+td.val { min-width: 14em; }
+td.imp { font-family: var(--font-data); font-weight: 600; white-space: nowrap; text-align: right; }
+.chip { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px; }
+.chip.L { background: var(--long-soft); color: var(--long); }
+.chip.S { background: var(--short-soft); color: var(--short); }
+.chip.N { color: var(--muted); border: 1px solid var(--line); }
+
+.liq { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+.side { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; display: grid; gap: 10px; min-width: 0; }
+.side.up { border-top: 3px solid var(--long); }
+.side.down { border-top: 3px solid var(--short); }
+.side-h { font-size: 13px; font-weight: 600; }
+.side-h span { font-weight: 400; color: var(--muted); display: block; font-size: 12px; }
+.side ol { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; font-family: var(--font-data); font-variant-numeric: tabular-nums; }
+.side li { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; font-size: 14px; }
+.side li:first-child { font-size: 17px; font-weight: 600; }
+.side li .d { color: var(--muted); font-weight: 400; font-size: 13px; }
+.side li .eq { font-family: var(--font-body); font-size: 11px; color: var(--accent); border: 1px solid var(--accent); border-radius: 999px; padding: 0 6px; margin-left: 6px; font-weight: 500; }
+.wall { font-size: 12px; color: var(--muted); border-top: 1px dashed var(--line); padding-top: 8px; font-variant-numeric: tabular-nums; }
+.manual { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.field { display: grid; gap: 4px; font-size: 13px; }
+.field span { color: var(--muted); }
+input { font-family: var(--font-data); font-size: 15px; color: var(--fg); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; width: 100%; box-sizing: border-box; }
+.note { font-size: 13px; color: var(--muted); max-width: 65ch; margin: 0; }
+.msg { border: 1px solid var(--accent); border-radius: 8px; padding: 10px 12px; font-size: 14px; }
+.empty { color: var(--muted); }
+@media (max-width: 480px) { .line { grid-template-columns: 1fr; gap: 0; } .price { font-size: 26px; } }
+@media (prefers-reduced-motion: reduce) { .bar div { transition: none; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>ETHUSDT <small>Crypto.com spot · hourly</small></h1>
+    <div class="meta">
+      <span id="status"><span class="dot" id="dot"></span><span id="statusText">Connecting to Crypto.com…</span></span>
+      <span id="next"></span>
+      <button id="refresh" type="button">Refresh now</button>
+    </div>
+  </header>
+
+  <div id="msg" class="msg" hidden></div>
+
+  <section class="verdict" aria-live="polite">
+    <div class="lines" id="lines">
+      <div class="line"><span class="k">Current value</span><span class="v price empty" id="vPrice">Loading…</span></div>
+      <div class="line"><span class="k">Support</span><span class="v empty" id="vSupport">Waiting for 4H candles</span></div>
+      <div class="line"><span class="k">Resistance</span><span class="v empty" id="vRes">Waiting for 4H candles</span></div>
+      <div class="line"><span class="k">Long</span><span class="v empty" id="vLong">–</span></div>
+      <div class="line"><span class="k">Short</span><span class="v empty" id="vShort">–</span></div>
+    </div>
+    <div class="bar" role="img" id="bar" aria-label="Long versus short bias">
+      <div class="L" id="barL" style="flex-basis:50%">LONG</div>
+      <div class="S" id="barS" style="flex-basis:50%">SHORT</div>
+    </div>
+    <div class="actions">
+      <span class="bias" id="bias">The bias appears once all five feeds have loaded.</span>
+    </div>
+    <div class="actions"><button id="copy" type="button" disabled>Copy summary</button><span class="bias" id="copyNote"></span></div>
+  </section>
+
+  <section>
+    <h2>Nearest liquidity</h2>
+    <div class="liq">
+      <div class="side up">
+        <div class="side-h">Above · buy-side <span>stops of shorts, breakout buys</span></div>
+        <ol id="liqAbove"><li class="empty">Waiting for candles</li></ol>
+        <div class="wall" id="wallAsk"></div>
+      </div>
+      <div class="side down">
+        <div class="side-h">Below · sell-side <span>stops of longs, breakdown sells</span></div>
+        <ol id="liqBelow"><li class="empty">Waiting for candles</li></ol>
+        <div class="wall" id="wallBid"></div>
+      </div>
+    </div>
+    <p class="note" id="magnet" style="margin-top:8px"></p>
+  </section>
+
+  <section>
+    <h2>9-indicator matrix</h2>
+    <div class="ledger">
+      <table>
+        <thead><tr><th>#</th><th>Indicator</th><th>TF</th><th>Live value</th><th style="text-align:right">Impact</th></tr></thead>
+        <tbody id="rows"><tr><td colspan="5" class="empty">Indicators fill in after the first data pull. Starting point is 50 / 50; each signal moves it by 5 points.</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Manual inputs (optional)</h2>
+    <div class="manual">
+      <label class="field" for="funding"><span>Binance funding % override (blank = use live perp premium)</span><input id="funding" type="number" step="0.0001" inputmode="decimal" placeholder="blank = live proxy"></label>
+      <label class="field" for="lsLong"><span>Long accounts % (Binance L/S, e.g. 65)</span><input id="lsLong" type="number" step="1" min="0" max="100" inputmode="decimal" placeholder="blank = neutral"></label>
+    </div>
+    <p class="note" style="margin-top:8px">Binance can't be reached from this page. Funding is scored live from the gap between Crypto.com's ETH perpetual and the spot index: +0.05% or more is crowded longs (short +5), −0.05% or less is long +5. Type a Binance funding rate to override it. No free connector offers a long/short account ratio, so that box stays manual. Typed values are saved in this browser only. Typed funding of 0.01% or more, or 60%+ long accounts, counts as short +5; negative funding or 40% or fewer long accounts counts as long +5.</p>
+  </section>
+
+  <p class="note">Method: support is the lowest 4H low of the last ~8 days; resistance is the nearest 4H swing high above price. EMA stack uses 10/20/50 because the feed returns 50 candles, not enough for EMA 100. Taker flow uses the last 150 trades as a stand-in for CVD. Liquidity pools are untouched 4H and 1D swing highs and lows, where stop orders usually sit; a real liquidation heatmap is not available from any free feed. The order book feed only goes 50 levels deep, so walls are shown for the price right next to market. This is a rule-based read of the data, not financial advice.</p>
+</div>
+
+<script>
+// ETHUSDT signal engine. Pure functions; shared by the dashboard page and the node test.
+// Candles are arrays of {t,o,h,l,c,v} sorted oldest -> newest.
+(function (root) {
+  function ema(vals, n) {
+    if (vals.length < n) return null;
+    let e = vals.slice(0, n).reduce((a, b) => a + b, 0) / n;
+    const k = 2 / (n + 1);
+    for (let i = n; i < vals.length; i++) e = vals[i] * k + e * (1 - k);
+    return e;
+  }
+  function rsi(vals, n = 14) {
+    if (vals.length < n + 1) return null;
+    let g = 0, l = 0;
+    for (let i = 1; i <= n; i++) { const d = vals[i] - vals[i - 1]; if (d > 0) g += d; else l -= d; }
+    g /= n; l /= n;
+    for (let i = n + 1; i < vals.length; i++) {
+      const d = vals[i] - vals[i - 1];
+      g = (g * (n - 1) + Math.max(d, 0)) / n;
+      l = (l * (n - 1) + Math.max(-d, 0)) / n;
+    }
+    return l === 0 ? 100 : 100 - 100 / (1 + g / l);
+  }
+  function atr(c, n = 14) {
+    if (c.length < n + 1) return null;
+    const tr = [];
+    for (let i = 1; i < c.length; i++) tr.push(Math.max(c[i].h - c[i].l, Math.abs(c[i].h - c[i - 1].c), Math.abs(c[i].l - c[i - 1].c)));
+    let a = tr.slice(0, n).reduce((x, y) => x + y, 0) / n;
+    for (let i = n; i < tr.length; i++) a = (a * (n - 1) + tr[i]) / n;
+    return a;
+  }
+  // Pivot highs/lows with `w` bars each side, closed bars only.
+  function pivots(c, w = 2) {
+    const hi = [], lo = [];
+    for (let i = w; i < c.length - w; i++) {
+      let isH = true, isL = true;
+      for (let j = i - w; j <= i + w; j++) {
+        if (j === i) continue;
+        if (c[j].h >= c[i].h) isH = false;
+        if (c[j].l <= c[i].l) isL = false;
+      }
+      if (isH) hi.push({ i, p: c[i].h, t: c[i].t });
+      if (isL) lo.push({ i, p: c[i].l, t: c[i].t });
+    }
+    return { hi, lo };
+  }
+
+  function analyze({ price, eth4h, eth1d, btc1d, trades, funding = null, lsLong = null, premium = null, oi = null }) {
+    const rows = [];
+    let long = 50;
+    const add = (n, name, frame, value, longPts) => { long += longPts; rows.push({ n, name, frame, value, impact: longPts }); };
+
+    // Closed 4H bars (last bar is still forming)
+    const closed4h = eth4h.slice(0, -1);
+    const closes4h = eth4h.map(x => x.c);
+    const atr4h = atr(closed4h, 14);
+
+    // 1. BTC trend (1D)
+    const bc = btc1d.map(x => x.c);
+    const b10 = ema(bc, 10), b20 = ema(bc, 20), bLast = bc[bc.length - 1];
+    const b7 = (bLast / bc[bc.length - 8] - 1) * 100;
+    let btcPts = 0, btcTxt;
+    if (bLast > b20 && b10 > b20) { btcPts = 5; btcTxt = "Bullish: above EMA20, EMA10 > EMA20"; }
+    else if (bLast < b20 && b10 < b20) { btcPts = -5; btcTxt = "Bearish: below EMA20, EMA10 < EMA20"; }
+    else btcTxt = "Mixed: price and EMAs disagree";
+    add(1, "BTC trend", "1D", `${btcTxt} · 7d ${b7 >= 0 ? "+" : ""}${b7.toFixed(1)}%`, btcPts);
+
+    // 2. Structure / liquidity (4H)
+    const pv = pivots(closed4h, 2);
+    const rangeLow = Math.min(...closed4h.map(x => x.l));
+    const rangeLowBar = closed4h.find(x => x.l === rangeLow);
+    const rangeHigh = Math.max(...closed4h.map(x => x.h));
+    const above = pv.hi.filter(p => p.p > price).sort((a, b) => a.p - b.p);
+    const passed = pv.hi.filter(p => p.p < price && p.i >= closed4h.length - 15).sort((a, b) => b.p - a.p);
+    const lowsBelow = pv.lo.filter(p => p.p < price).sort((a, b) => b.p - a.p);
+    const resistance = above.length ? above[0].p : rangeHigh;
+    const resistanceNote = above.length ? "nearest 4H swing high above" : "50-bar range high";
+    const passedLvl = passed.length ? passed[0].p : null;
+    const nearSupport = passedLvl || (lowsBelow.length ? lowsBelow[0].p : null);
+    const sweptRecovered = (price - rangeLow) / rangeLow > 0.03;
+    let stPts = 0, stTxt;
+    if (passedLvl) { stPts = 5; stTxt = `Broke above swing high $${fmt(passedLvl)}`; }
+    else if (lowsBelow.length && price < lowsBelow[0].p) { stPts = -5; stTxt = "Lost nearest swing low"; }
+    else stTxt = "Inside range, no break";
+    if (sweptRecovered) stTxt += ` · lows swept at $${fmt(rangeLow)} and recovered`;
+    add(2, "Structure & liquidity", "4H", stTxt, stPts);
+
+    // 3. ATR volatility (1D)
+    const atrD = atr(eth1d, 14);
+    const atrPct = atrD / price * 100;
+    add(3, "ATR (14) volatility", "1D", `$${fmt(atrD)} · ${atrPct.toFixed(2)}% of price`, 0);
+
+    // 4–5. Not in the free feed
+    if ((funding == null || isNaN(funding)) && premium != null && isFinite(premium)) {
+      let p = 0, t = "Neutral";
+      if (premium >= 0.05) { p = -5; t = "Perp above spot, longs paying (crowded)"; }
+      else if (premium <= -0.05) { p = 5; t = "Perp below spot, shorts paying"; }
+      const oiTxt = oi ? ` · OI ${Math.round(oi).toLocaleString("en-US")} ETH` : "";
+      add(4, "Funding (perp premium proxy)", "Live", `${premium >= 0 ? "+" : ""}${premium.toFixed(4)}% · ${t}${oiTxt}`, p);
+    }
+    else if (funding == null || isNaN(funding)) add(4, "Funding rate", "8H", "Not in feed · enter it below to score", 0);
+    else {
+      let p = 0, t = "Neutral";
+      if (funding >= 0.01) { p = -5; t = "Longs paying a high premium (crowded)"; }
+      else if (funding < 0) { p = 5; t = "Shorts paying (squeeze fuel)"; }
+      add(4, "Funding rate", "8H", `${funding.toFixed(4)}% · ${t} · manual`, p);
+    }
+    if (lsLong == null || isNaN(lsLong)) add(5, "Long/short ratio", "8H", "Not in feed · enter it below to score", 0);
+    else {
+      let p = 0, t = "Balanced";
+      if (lsLong >= 60) { p = -5; t = "Retail heavily long (contrarian short)"; }
+      else if (lsLong <= 40) { p = 5; t = "Retail heavily short (contrarian long)"; }
+      add(5, "Long/short ratio", "8H", `${lsLong.toFixed(0)}% long accounts · ${t} · manual`, p);
+    }
+
+    // 6. EMA stack (4H)
+    const e10 = ema(closes4h, 10), e20 = ema(closes4h, 20), e50 = ema(closes4h, 50);
+    let emaPts = 0, emaTxt;
+    if (e10 > e20 && e20 > e50) { emaPts = 5; emaTxt = "Bullish (10 > 20 > 50)"; }
+    else if (e10 < e20 && e20 < e50) { emaPts = -5; emaTxt = "Bearish (10 < 20 < 50)"; }
+    else emaTxt = "Mixed";
+    add(6, "EMA stack", "4H", `${emaTxt} · ${fmt(e10)} / ${fmt(e20)} / ${fmt(e50)}`, emaPts);
+
+    // 7. RSI (4H)
+    const r = rsi(closes4h, 14);
+    let rPts = 0, rTxt = "Mid-range";
+    if (r >= 70) { rPts = -5; rTxt = "Overbought"; }
+    else if (r >= 60) { rPts = 5; rTxt = "Bullish momentum"; }
+    else if (r <= 30) { rPts = 5; rTxt = "Oversold"; }
+    else if (r <= 40) { rPts = -5; rTxt = "Bearish momentum"; }
+    add(7, "RSI momentum", "4H", `${r.toFixed(1)} · ${rTxt}`, rPts);
+
+    // 8. Taker flow (CVD proxy) from recent trades
+    let buy = 0, sell = 0;
+    for (const t of trades) { if (t.side === "buy") buy += t.q; else sell += t.q; }
+    const buyShare = buy + sell > 0 ? buy / (buy + sell) * 100 : 50;
+    let fPts = 0, fTxt = "Balanced";
+    if (buyShare > 55) { fPts = 5; fTxt = "Takers buying"; }
+    else if (buyShare < 45) { fPts = -5; fTxt = "Takers selling"; }
+    add(8, "Taker flow (CVD proxy)", "Live", `${fTxt} · ${buyShare.toFixed(0)}% buy of last ${trades.length} trades`, fPts);
+
+    // 9. Volume (last closed 4H vs prior 20)
+    const lastC = closed4h[closed4h.length - 1];
+    const prev20 = closed4h.slice(-21, -1);
+    const avgV = prev20.reduce((a, x) => a + x.v, 0) / prev20.length;
+    const ratio = lastC.v / avgV;
+    const move6 = closes4h[closes4h.length - 1] - closes4h[closes4h.length - 7];
+    let vPts = 0, vTxt;
+    if (ratio >= 1.2) { vPts = lastC.c >= lastC.o ? 5 : -5; vTxt = `Above average (${ratio.toFixed(2)}×), confirms ${lastC.c >= lastC.o ? "up" : "down"} candle`; }
+    else if (ratio <= 0.8) { vPts = move6 > 0 ? -5 : 5; vTxt = `Below average (${ratio.toFixed(2)}×), recent ${move6 > 0 ? "rise" : "drop"} unconfirmed`; }
+    else vTxt = `Near average (${ratio.toFixed(2)}×)`;
+    add(9, "Volume", "4H", vTxt, vPts);
+
+    long = Math.max(5, Math.min(95, long));
+    return {
+      price,
+      support: rangeLow, supportDate: rangeLowBar && rangeLowBar.t, sweptRecovered,
+      nearSupport, passedLvl,
+      resistance, resistanceNote,
+      long, short: 100 - long,
+      rows,
+    };
+  }
+  // Liquidity pools: stops rest just beyond swing highs/lows that price has not traded through since.
+  // Equal highs/lows (within 0.15%) are flagged as stronger pools.
+  function pools(c, price, w, label) {
+    const pv = pivots(c, w);
+    const unsweptHi = pv.hi.filter(p => { for (let j = p.i + 1; j < c.length; j++) if (c[j].h > p.p) return false; return p.p > price; });
+    const unsweptLo = pv.lo.filter(p => { for (let j = p.i + 1; j < c.length; j++) if (c[j].l < p.p) return false; return p.p < price; });
+    const tag = (arr, p) => {
+      const eq = arr.filter(q => q !== p && Math.abs(q.p - p.p) / p.p < 0.0015).length;
+      return { price: p.p, t: p.t, equal: eq > 0, tf: label, dist: (p.p - price) / price * 100 };
+    };
+    return {
+      above: unsweptHi.sort((a, b) => a.p - b.p).map(p => tag(unsweptHi, p)),
+      below: unsweptLo.sort((a, b) => b.p - a.p).map(p => tag(unsweptLo, p)),
+    };
+  }
+  function liquidity({ price, eth4h, eth1d, book }) {
+    const closed4h = eth4h.slice(0, -1), closed1d = eth1d.slice(0, -1);
+    const p4 = pools(closed4h, price, 2, "4H"), pD = pools(closed1d, price, 2, "1D");
+    const merge = (a, b, dir) => {
+      const all = a.concat(b).sort((x, y) => dir * (x.price - y.price));
+      const out = [];
+      for (const p of all) if (!out.some(q => Math.abs(q.price - p.price) / p.price < 0.002)) out.push(p);
+      return out.slice(0, 3);
+    };
+    const above = merge(p4.above, pD.above, 1);
+    const below = merge(p4.below, pD.below, -1);
+    // Fallback when no unswept swing exists on a side: the window extreme
+    if (!above.length) { const h = Math.max(...closed1d.map(x => x.h)); above.push({ price: h, tf: "range high", equal: false, dist: (h - price) / price * 100 }); }
+    if (!below.length) { const l = Math.min(...closed1d.map(x => x.l)); below.push({ price: l, tf: "range low", equal: false, dist: (l - price) / price * 100 }); }
+    let wallAsk = null, wallBid = null, bookDepth = null;
+    if (book && book.asks && book.bids && book.asks.length && book.bids.length) {
+      wallAsk = book.asks.reduce((m, x) => x.q > m.q ? x : m);
+      wallBid = book.bids.reduce((m, x) => x.q > m.q ? x : m);
+      bookDepth = { askTop: book.asks[book.asks.length - 1].p, bidBottom: book.bids[book.bids.length - 1].p };
+    }
+    return { above, below, wallAsk, wallBid, bookDepth };
+  }
+  function bookFrom(payload) {
+    const d = payload && (payload.asks ? payload : payload.data && !Array.isArray(payload.data) ? payload.data : Array.isArray(payload.data) ? payload.data[0] : payload.result && payload.result.data && payload.result.data[0]);
+    if (!d) return null;
+    const m = arr => (arr || []).map(x => Array.isArray(x) ? { p: +x[0], q: +x[1] } : { p: +x.price, q: +x.qty });
+    return { asks: m(d.asks), bids: m(d.bids) };
+  }
+  function fmt(n) { return n == null ? "–" : Number(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+
+  // Normalisers for Crypto.com connector payloads
+  function candlesFrom(payload) {
+    const d = (payload && (payload.data || (payload.result && payload.result.data))) || [];
+    return d.map(x => ({ t: x.timestamp || x.t, o: +(x.open ?? x.o), h: +(x.high ?? x.h), l: +(x.low ?? x.l), c: +(x.close ?? x.c), v: +(x.volume ?? x.v) }))
+      .sort((a, b) => new Date(a.t) - new Date(b.t));
+  }
+  function tradesFrom(payload) {
+    const d = (payload && (payload.data || (payload.result && payload.result.data))) || [];
+    return d.map(x => ({ side: String(x.side || x.s || "").toLowerCase(), q: +(x.qty ?? x.q) }));
+  }
+  function priceFrom(payload) {
+    const p = payload && (payload.data && !Array.isArray(payload.data) ? payload.data : payload);
+    const x = Array.isArray(p && p.data) ? p.data[0] : p;
+    return x ? +(x.last ?? x.a ?? x.k) : NaN;
+  }
+
+  root.EthEngine = { liquidity, bookFrom, analyze, ema, rsi, atr, pivots, fmt, candlesFrom, tradesFrom, priceFrom };
+})(typeof window !== "undefined" ? window : globalThis);
+
+</script>
+<script>
+(function () {
+  const E = window.EthEngine;
+  const SERVER = "Crypto.com";
+  const HOUR = 3600000;
+  const $ = id => document.getElementById(id);
+  const feeds = {};
+  const stamps = {};
+  let mcp = null, lastResult = null, lastUpdated = null;
+
+  const WATCHES = [
+    { key: "ticker", tool: "get_ticker", input: { instrument_name: "ETH_USDT" } },
+    { key: "eth4h", tool: "get_candlestick", input: { instrument_name: "ETH_USDT", timeframe: "4h" } },
+    { key: "eth1d", tool: "get_candlestick", input: { instrument_name: "ETH_USDT", timeframe: "1D" } },
+    { key: "btc1d", tool: "get_candlestick", input: { instrument_name: "BTC_USDT", timeframe: "1D" } },
+    { key: "trades", tool: "get_trades", input: { instrument_name: "ETH_USDT", count: 150 } },
+    { key: "book", tool: "get_book", input: { instrument_name: "ETH_USDT", depth: 50 }, optional: true },
+    { key: "mark", tool: "get_mark_price", input: { instrument_name: "ETHUSD-PERP" }, optional: true },
+    { key: "index", tool: "get_index_price", input: { instrument_name: "ETHUSD-INDEX" }, optional: true },
+    { key: "perp", tool: "get_ticker", input: { instrument_name: "ETHUSD-PERP" }, optional: true },
+  ];
+  let lastLiq = null;
+
+  function loadManual() {
+    try {
+      const f = localStorage.getItem("eth.funding"), l = localStorage.getItem("eth.lsLong");
+      if (f !== null) $("funding").value = f;
+      if (l !== null) $("lsLong").value = l;
+    } catch (e) {}
+  }
+  function saveManual() {
+    try { localStorage.setItem("eth.funding", $("funding").value); localStorage.setItem("eth.lsLong", $("lsLong").value); } catch (e) {}
+  }
+  const numOrNull = v => (v === "" || v == null || isNaN(+v)) ? null : +v;
+
+  function showMsg(text) { const m = $("msg"); if (!text) { m.hidden = true; return; } m.textContent = text; m.hidden = false; }
+  function setStatus(kind, text) { $("dot").className = "dot " + (kind || ""); $("statusText").textContent = text; }
+
+  function errorText(err) {
+    switch (err && err.code) {
+      case "server_not_connected": return "Crypto.com isn't connected for you. Add it in claude.ai Settings → Connectors, then reload.";
+      case "needs_reauth": return "Crypto.com needs reconnecting. Reconnect it in claude.ai Settings → Connectors.";
+      case "selection_required": return "You have more than one Crypto.com connector. Choose one when claude.ai asks, then reload.";
+      case "not_in_manifest": return "Crypto.com access is turned off for this page. Allow it from the page's Permissions menu.";
+      case "approval_required": return "Crypto.com calls need your approval. Press Refresh now and allow them.";
+      case "blocked_by_policy": return "Your organization blocks Crypto.com for this page.";
+      case "server_unavailable": return "Crypto.com didn't answer. Showing the last good numbers; the next hourly pull will try again.";
+      case "tool_error": return "Crypto.com returned an error: " + (err.message || "unknown");
+      default: return "Data pull failed (" + ((err && err.code) || "unknown") + "). Showing the last good numbers.";
+    }
+  }
+
+  function fmt$(n) { return "$" + E.fmt(n); }
+  function istTime(ms) {
+    return new Date(ms).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "Asia/Kolkata" }) + " IST";
+  }
+  function istDate(t) {
+    try { return new Date(t).toLocaleDateString("en-IN", { day: "numeric", month: "short", timeZone: "Asia/Kolkata" }); } catch (e) { return ""; }
+  }
+
+  function compute() {
+    if (!WATCHES.every(w => w.optional || feeds[w.key])) return;
+    const eth4h = E.candlesFrom(feeds.eth4h), eth1d = E.candlesFrom(feeds.eth1d), btc1d = E.candlesFrom(feeds.btc1d);
+    const trades = E.tradesFrom(feeds.trades);
+    let price = E.priceFrom(feeds.ticker);
+    if (!isFinite(price) && eth4h.length) price = eth4h[eth4h.length - 1].c;
+    if (eth4h.length < 30 || eth1d.length < 16 || btc1d.length < 21 || !isFinite(price)) {
+      showMsg("Crypto.com returned less data than expected, so the matrix can't be computed yet.");
+      return;
+    }
+    const pick = (pl, f) => { const x = pl && (pl.data && !Array.isArray(pl.data) ? pl.data : Array.isArray(pl && pl.data) ? pl.data[0] : pl); return x ? +x[f] : NaN; };
+    const mark = pick(feeds.mark, "price"), index = pick(feeds.index, "price"), oiRaw = pick(feeds.perp, "open_interest");
+    const premium = isFinite(mark) && isFinite(index) && index > 0 ? (mark - index) / index * 100 : null;
+    lastResult = E.analyze({ price, eth4h, eth1d, btc1d, trades, funding: numOrNull($("funding").value), lsLong: numOrNull($("lsLong").value), premium, oi: isFinite(oiRaw) ? oiRaw : null });
+    render(lastResult);
+    lastLiq = E.liquidity({ price, eth4h, eth1d, book: feeds.book ? E.bookFrom(feeds.book) : null });
+    renderLiq(lastLiq, price);
+  }
+
+  function renderLiq(L, price) {
+    const list = (el, arr) => {
+      el.textContent = "";
+      arr.forEach(p => {
+        const li = document.createElement("li");
+        const left = document.createElement("span");
+        left.textContent = fmt$(p.price);
+        if (p.equal) { const e = document.createElement("span"); e.className = "eq"; e.textContent = "equal levels"; left.appendChild(e); }
+        const right = document.createElement("span"); right.className = "d";
+        right.textContent = (p.dist >= 0 ? "+" : "") + p.dist.toFixed(2) + "% · " + p.tf;
+        li.append(left, right); el.appendChild(li);
+      });
+    };
+    list($("liqAbove"), L.above); list($("liqBelow"), L.below);
+    if (L.wallAsk) {
+      $("wallAsk").textContent = "Biggest ask wall: " + fmt$(L.wallAsk.p) + " · " + L.wallAsk.q.toFixed(2) + " ETH (book shows up to " + fmt$(L.bookDepth.askTop) + ")";
+      $("wallBid").textContent = "Biggest bid wall: " + fmt$(L.wallBid.p) + " · " + L.wallBid.q.toFixed(2) + " ETH (book shows down to " + fmt$(L.bookDepth.bidBottom) + ")";
+    } else {
+      $("wallAsk").textContent = "Order book not loaded"; $("wallBid").textContent = "Order book not loaded";
+    }
+    const a = L.above[0], b = L.below[0];
+    const nearer = Math.abs(a.dist) < Math.abs(b.dist) ? "above at " + fmt$(a.price) : "below at " + fmt$(b.price);
+    $("magnet").textContent = "Nearer pool is " + nearer + ". Price often reaches for the closer pool first; a sweep and fast reversal there is a common trap.";
+  }
+
+  function render(r) {
+    $("vPrice").className = "v price"; $("vPrice").textContent = fmt$(r.price);
+    const sweptTxt = r.sweptRecovered ? "downside liquidity swept on " + istDate(r.supportDate) : "8-day range low";
+    $("vSupport").className = "v";
+    $("vSupport").innerHTML = "<b>" + fmt$(r.support) + "</b> <em>(" + sweptTxt + ")</em>";
+    $("vRes").className = "v";
+    let res = "<b>" + fmt$(r.resistance) + "</b> <em>(" + r.resistanceNote + ")</em>";
+    if (r.passedLvl) res += "<br><em>Passed: " + fmt$(r.passedLvl) + ", now first support on a retest</em>";
+    $("vRes").innerHTML = res;
+    $("vLong").className = "v"; $("vLong").innerHTML = "<b>" + r.long + "%</b>";
+    $("vShort").className = "v"; $("vShort").innerHTML = "<b>" + r.short + "%</b>";
+    $("barL").style.flexBasis = r.long + "%"; $("barL").textContent = "LONG " + r.long + "%";
+    $("barS").style.flexBasis = r.short + "%"; $("barS").textContent = r.short + "% SHORT";
+    const lean = r.long > r.short ? "Long-favoured" : r.long < r.short ? "Short-favoured" : "No edge";
+    $("bias").innerHTML = "<b>" + lean + ".</b> " + r.rows.filter(x => x.impact > 0).length + " signals lean long, " + r.rows.filter(x => x.impact < 0).length + " lean short, " + r.rows.filter(x => x.impact === 0).length + " neutral.";
+    $("copy").disabled = false;
+
+    const tb = $("rows"); tb.textContent = "";
+    for (const row of r.rows) {
+      const tr = document.createElement("tr");
+      const chip = row.impact > 0 ? ["L", "Long +" + row.impact] : row.impact < 0 ? ["S", "Short +" + (-row.impact)] : ["N", "Neutral"];
+      tr.innerHTML = '<td class="n"></td><td></td><td class="tf"></td><td class="val"></td><td class="imp"><span class="chip ' + chip[0] + '"></span></td>';
+      tr.children[0].textContent = row.n; tr.children[1].textContent = row.name; tr.children[2].textContent = row.frame;
+      tr.children[3].textContent = row.value; tr.children[4].firstChild.textContent = chip[1];
+      tb.appendChild(tr);
+    }
+  }
+
+  function linesText(r) {
+    let res = fmt$(r.resistance);
+    if (r.passedLvl) res += " (" + fmt$(r.passedLvl) + " passed, now first support on a retest)";
+    let liq = "";
+    if (lastLiq) liq = "\nLiquidity above: " + fmt$(lastLiq.above[0].price) + " (" + lastLiq.above[0].dist.toFixed(2) + "%)\nLiquidity below: " + fmt$(lastLiq.below[0].price) + " (" + lastLiq.below[0].dist.toFixed(2) + "%)";
+    return "Current value: " + fmt$(r.price) + "\nSupport: " + fmt$(r.support) + (r.sweptRecovered ? " (downside liquidity swept)" : "") + "\nResistance: " + res + liq + "\nLong: " + r.long + "%\nShort: " + r.short + "%";
+  }
+
+  function tickClock() {
+    if (!lastUpdated) { $("next").textContent = ""; return; }
+    const mins = Math.max(0, Math.round((lastUpdated + HOUR - Date.now()) / 60000));
+    $("next").textContent = "Next pull in " + mins + " min";
+  }
+
+  function onEvent(key, ev) {
+    if (ev.type === "data") {
+      feeds[key] = ev.result.payload;
+      stamps[key] = ev.result.cache ? ev.result.cache.storedAt : Date.now();
+      lastUpdated = Math.min(...Object.values(stamps));
+      showMsg("");
+      setStatus(ev.result.cache && ev.result.cache.revalidating ? "stale" : "live", "Updated " + istTime(lastUpdated));
+      compute(); tickClock();
+    } else {
+      const err = ev.error || {};
+      const denial = ["needs_reauth", "server_not_connected", "blocked_by_policy", "approval_required", "not_in_manifest", "selection_required"].includes(err.code);
+      if (denial) { delete feeds[key]; setStatus("", "Not connected"); }
+      else if (lastUpdated) setStatus("stale", "Last good " + istTime(lastUpdated));
+      showMsg(errorText(err));
+    }
+  }
+
+  async function refreshNow() {
+    if (!mcp) return;
+    $("refresh").disabled = true;
+    setStatus("stale", "Refreshing…");
+    try {
+      await Promise.all(WATCHES.map(w => mcp.callTool(SERVER, w.tool, w.input, { cache: { staleTime: 60000, refresh: true } })
+        .then(res => onEvent(w.key, { type: "data", result: res }))
+        .catch(err => onEvent(w.key, { type: "error", error: err }))));
+    } finally { $("refresh").disabled = false; }
+  }
+
+  $("refresh").addEventListener("click", refreshNow);
+  $("copy").addEventListener("click", () => {
+    if (!lastResult) return;
+    const text = linesText(lastResult);
+    const done = ok => { $("copyNote").textContent = ok ? "Copied." : "Copy blocked here. Select the lines above instead."; };
+    try { navigator.clipboard.writeText(text).then(() => done(true), () => done(false)); } catch (e) { done(false); }
+  });
+  ["funding", "lsLong"].forEach(id => $(id).addEventListener("input", () => { saveManual(); compute(); }));
+  loadManual();
+  setInterval(tickClock, 30000);
+
+  (async () => {
+    mcp = window.claude && window.claude.use ? await window.claude.use("mcp") : null;
+    if (!mcp) {
+      setStatus("", "No live data here");
+      showMsg("Live data only works when this page is opened in claude.ai with the Crypto.com connector added.");
+      $("refresh").disabled = true;
+      return;
+    }
+    for (const w of WATCHES) {
+      mcp.watchTool(SERVER, w.tool, w.input, ev => onEvent(w.key, ev), { cache: { staleTime: 60000 }, refetchInterval: HOUR });
+    }
+  })();
+})();
+</script>
+
+</body></html>
