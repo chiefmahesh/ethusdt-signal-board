@@ -1,0 +1,538 @@
+<title>ETHUSDT Signal Board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=optional">
+<style>
+/* Layout: phone = one column (verdict, liquidity, matrix, inputs); tablet = liquidity sides pair up; desktop ≥1024px = two columns, verdict + liquidity left, matrix + inputs right. */
+:root {
+  --bg: #eef2f0; --panel: #ffffff; --fg: #14201c; --muted: #5a6964; --line: #d3dbd7;
+  --accent: #a85a24; --long: #1c7f53; --short: #bf3434; --long-soft: #dcefe5; --short-soft: #f6dddd;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-data: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0e1513; --panel: #151e1b; --fg: #e3eae7; --muted: #8b9a95; --line: #26332f;
+  --accent: #e39a5f; --long: #43c08a; --short: #ef6b6b; --long-soft: #173329; --short-soft: #3a1d1e; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0e1513; --panel: #151e1b; --fg: #e3eae7; --muted: #8b9a95; --line: #26332f;
+  --accent: #e39a5f; --long: #43c08a; --short: #ef6b6b; --long-soft: #173329; --short-soft: #3a1d1e; color-scheme: dark }
+body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 15px; line-height: 1.5; }
+.wrap { max-width: 1240px; margin: 0 auto; padding-inline: clamp(12px, 3vw, 32px); padding-block: clamp(14px, 3vw, 28px) 48px; display: grid; gap: clamp(14px, 2.5vw, 22px); box-sizing: border-box; }
+.main { display: grid; gap: clamp(14px, 2.5vw, 22px); min-width: 0; }
+.col { display: grid; gap: clamp(14px, 2.5vw, 22px); align-content: start; min-width: 0; }
+section { min-width: 0; }
+@media (min-width: 1024px) { .main { grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); align-items: start; } .col.a { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); } }
+header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; }
+h1 { margin: 0; font-family: var(--font-data); font-size: clamp(19px, 4.5vw, 24px); font-weight: 600; letter-spacing: 0.02em; text-wrap: balance; }
+h1 small { font-family: var(--font-body); font-size: 13px; font-weight: 400; color: var(--muted); letter-spacing: 0; margin-left: 8px; white-space: nowrap; }
+.meta { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; display: flex; gap: 8px 12px; flex-wrap: wrap; align-items: center; }
+.stat { display: flex; flex-wrap: wrap; gap: 2px 12px; }
+.stat > span { white-space: nowrap; }
+#next { min-width: 9.5em; }
+@media (max-width: 600px) { header { align-items: stretch; } .meta { width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; } .stat { flex-direction: column; } }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); display: inline-block; margin-right: 6px; vertical-align: 1px; }
+.dot.live { background: var(--long); }
+.dot.stale { background: var(--accent); }
+button { font: inherit; font-size: 13px; font-weight: 500; color: var(--fg); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 8px 14px; min-height: 40px; cursor: pointer; touch-action: manipulation; }
+button:hover { border-color: var(--accent); }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button:disabled { opacity: 0.55; cursor: progress; }
+
+.verdict { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: clamp(14px, 3.5vw, 22px); display: grid; gap: 16px; }
+.lines { font-family: var(--font-data); font-variant-numeric: tabular-nums; display: grid; gap: 8px; font-size: clamp(14px, 3.6vw, 16px); }
+.line { display: grid; grid-template-columns: minmax(7.5em, 9.5em) minmax(0, 1fr); gap: 8px; min-width: 0; align-items: baseline; }
+.line .k { color: var(--muted); }
+.line .v { min-width: 0; overflow-wrap: anywhere; }
+.line .v b { font-weight: 600; }
+#vSupport { min-height: 3em; }
+#vRes { min-height: 4.5em; }
+@media (min-width: 520px) { #vSupport { min-height: 1.5em; } #vRes { min-height: 3em; } }
+.line .v em { font-style: normal; color: var(--muted); font-family: var(--font-body); font-size: 13px; }
+.price { font-size: clamp(26px, 7vw, 34px); font-weight: 600; line-height: 1.1; }
+.bar { display: flex; height: 34px; border-radius: 6px; overflow: hidden; font-family: var(--font-data); font-weight: 600; font-size: 14px; }
+.bar div { display: flex; align-items: center; padding-inline: 10px; transition: flex-basis 0.6s ease; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bar .L { background: var(--long-soft); color: var(--long); }
+.bar .S { background: var(--short-soft); color: var(--short); justify-content: flex-end; }
+.bias { font-size: 14px; color: var(--muted); }
+.bias b { color: var(--fg); font-weight: 600; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+h2 { margin: 0 0 8px; font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.ledger { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+tr:last-child td { border-bottom: 0; }
+th { font-size: 12px; font-weight: 500; color: var(--muted); }
+td.n, td.tf { font-family: var(--font-data); color: var(--muted); white-space: nowrap; }
+td.val { min-width: 12em; overflow-wrap: anywhere; }
+/* Phone: each indicator becomes a two-line card instead of a sideways-scrolling table */
+@media (max-width: 640px) {
+  .ledger { overflow-x: visible; }
+  .ledger thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .ledger tbody tr { display: grid; grid-template-columns: 1.6em minmax(0, 1fr) auto; grid-template-areas: "n name imp" ". val val"; gap: 2px 8px; padding: 12px 14px; border-bottom: 1px solid var(--line); }
+  .ledger tbody tr:last-child { border-bottom: 0; }
+  .ledger td { padding: 0; border: 0; min-width: 0; }
+  .ledger td.n { grid-area: n; }
+  .ledger td:nth-child(2) { grid-area: name; font-weight: 600; }
+  .ledger td.tf { display: none; }
+  .ledger td.val { grid-area: val; min-width: 0; color: var(--muted); font-size: 13px; min-height: 3em; }
+  .ledger td.imp { grid-area: imp; }
+  .ledger td[colspan] { grid-column: 1 / -1; color: var(--muted); }
+}
+td.imp { font-family: var(--font-data); font-weight: 600; white-space: nowrap; text-align: right; }
+.chip { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px; }
+.chip.L { background: var(--long-soft); color: var(--long); }
+.chip.S { background: var(--short-soft); color: var(--short); }
+.chip.N { color: var(--muted); border: 1px solid var(--line); }
+
+.liq { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 12px; }
+.side { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; display: grid; gap: 10px; min-width: 0; }
+.side.up { border-top: 3px solid var(--long); }
+.side.down { border-top: 3px solid var(--short); }
+.side-h { font-size: 13px; font-weight: 600; }
+.side-h span { font-weight: 400; color: var(--muted); display: block; font-size: 12px; }
+.side ol { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; font-family: var(--font-data); font-variant-numeric: tabular-nums; }
+.side li { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; font-size: 14px; }
+.side li:first-child { font-size: 17px; font-weight: 600; }
+.side li .d { color: var(--muted); font-weight: 400; font-size: 13px; }
+.side li .eq { font-family: var(--font-body); font-size: 11px; color: var(--accent); border: 1px solid var(--accent); border-radius: 999px; padding: 0 6px; margin-left: 6px; font-weight: 500; }
+.wall { min-height: 4.5em; font-size: 12px; color: var(--muted); border-top: 1px dashed var(--line); padding-top: 8px; font-variant-numeric: tabular-nums; }
+.manual { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 12px; }
+.field { display: grid; gap: 4px; font-size: 13px; }
+.field span { color: var(--muted); }
+input { font-family: var(--font-data); font-size: 15px; color: var(--fg); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; width: 100%; box-sizing: border-box; min-height: 44px; font-size: 16px; }
+.note { font-size: 13px; color: var(--muted); max-width: 75ch; margin: 0; }
+.msg { border: 1px solid var(--accent); border-radius: 8px; padding: 10px 12px; font-size: 14px; }
+.empty { color: var(--muted); }
+@media (max-width: 400px) { .line { grid-template-columns: 1fr; gap: 0; } .bar { font-size: 12px; } .bar div { padding-inline: 8px; } }
+@media (prefers-reduced-motion: reduce) { .bar div { transition: none; } }
+/* ---- Refresh animation ---- */
+#refresh { position: relative; overflow: hidden; display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 10.6em; flex: none; white-space: nowrap; }
+#refresh .lbl { white-space: nowrap; }
+#refresh .ico { width: 16px; height: 16px; flex: none; transition: transform 0.3s ease; }
+#refresh:hover:not(:disabled) .ico { transform: rotate(-45deg); }
+#refresh.busy { cursor: progress; border-color: var(--accent); color: var(--accent); }
+#refresh.busy .ico { animation: spin 0.8s linear infinite; }
+#refresh.busy::after { content: ""; position: absolute; left: 0; bottom: 0; height: 2px; width: 40%; background: var(--accent); animation: sweep 1.1s ease-in-out infinite; }
+#refresh.done { border-color: var(--long); color: var(--long); }
+#refresh.fail { border-color: var(--short); color: var(--short); animation: shake 0.4s ease; }
+#refresh:active:not(:disabled) { transform: scale(0.96); }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes sweep { 0% { transform: translateX(-100%); } 100% { transform: translateX(250%); } }
+@keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+.verdict { position: relative; overflow: hidden; }
+.lines .v, .side ol, .ledger tbody { transition: opacity 0.3s ease, filter 0.3s ease; }
+.loading .lines .v, .busy-page .side ol, .busy-page .ledger tbody { opacity: 0.45; filter: blur(0.6px); }
+.price.up { animation: flashUp 1.2s ease; }
+.price.down { animation: flashDown 1.2s ease; }
+@keyframes flashUp { 0% { color: var(--long); text-shadow: 0 0 18px var(--long); } 100% { color: var(--fg); text-shadow: none; } }
+@keyframes flashDown { 0% { color: var(--short); text-shadow: 0 0 18px var(--short); } 100% { color: var(--fg); text-shadow: none; } }
+.delta { display: block; height: 18px; line-height: 18px; white-space: nowrap; font-size: 13px; font-weight: 600; font-family: var(--font-data); opacity: 0; transition: opacity 0.4s ease; vertical-align: middle; }
+.delta.show { opacity: 1; }
+.delta.up { color: var(--long); } .delta.down { color: var(--short); }
+.ledger tr.changed td { animation: rowGlow 1.8s ease; }
+@keyframes rowGlow { 0% { background: color-mix(in srgb, var(--accent) 22%, transparent); } 100% { background: transparent; } }
+.side li.arrive { animation: rise 0.45s ease both; }
+@keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  #refresh.busy .ico, #refresh.busy::after, .price.up, .price.down, .ledger tr.changed td, .side li.arrive, #refresh.fail { animation: none; }
+}
+
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>ETHUSDT <small id="src">connecting · hourly</small></h1>
+    <div class="meta">
+      <div class="stat"><span id="status"><span class="dot" id="dot"></span><span id="statusText">Connecting…</span></span>
+      <span id="next">&nbsp;</span></div>
+      <button id="refresh" type="button"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg><span class="lbl" id="refreshLbl">Refresh now</span></button>
+    </div>
+  </header>
+
+  <div id="msg" class="msg" hidden></div>
+
+  <div class="main">
+  <div class="col a">
+  <section class="verdict" aria-live="polite">
+    <div class="lines" id="lines">
+      <div class="line"><span class="k">Current value</span><span class="v"><span class="price empty" id="vPrice">Loading…</span><span class="delta" id="vDelta"></span></span></div>
+      <div class="line"><span class="k">Support</span><span class="v empty" id="vSupport">Waiting for 4H candles</span></div>
+      <div class="line"><span class="k">Resistance</span><span class="v empty" id="vRes">Waiting for 4H candles</span></div>
+      <div class="line"><span class="k">Long</span><span class="v empty" id="vLong">–</span></div>
+      <div class="line"><span class="k">Short</span><span class="v empty" id="vShort">–</span></div>
+    </div>
+    <div class="bar" role="img" id="bar" aria-label="Long versus short bias">
+      <div class="L" id="barL" style="flex-basis:50%">LONG</div>
+      <div class="S" id="barS" style="flex-basis:50%">SHORT</div>
+    </div>
+    <div class="actions">
+      <span class="bias" id="bias">The bias appears once the market data has loaded.</span>
+    </div>
+    <div class="actions"><button id="copy" type="button" disabled>Copy summary</button><span class="bias" id="copyNote"></span></div>
+  </section>
+
+  <section>
+    <h2>Nearest liquidity</h2>
+    <div class="liq">
+      <div class="side up">
+        <div class="side-h">Above · buy-side <span>stops of shorts, breakout buys</span></div>
+        <ol id="liqAbove"><li class="empty">—</li><li class="empty">—</li><li class="empty">—</li></ol>
+        <div class="wall" id="wallAsk"></div>
+      </div>
+      <div class="side down">
+        <div class="side-h">Below · sell-side <span>stops of longs, breakdown sells</span></div>
+        <ol id="liqBelow"><li class="empty">—</li><li class="empty">—</li><li class="empty">—</li></ol>
+        <div class="wall" id="wallBid"></div>
+      </div>
+    </div>
+    <p class="note" id="magnet" style="margin-top:8px; min-height: 4.5em"></p>
+  </section>
+  </div>
+  <div class="col b">
+
+  <section>
+    <h2>9-indicator matrix</h2>
+    <div class="ledger">
+      <table>
+        <thead><tr><th>#</th><th>Indicator</th><th>TF</th><th>Live value</th><th style="text-align:right">Impact</th></tr></thead>
+        <tbody id="rows"><tr><td class="n">1</td><td>BTC trend</td><td class="tf">1D</td><td class="val empty">Loading…</td><td class="imp"><span class="chip N">–</span></td></tr><tr><td class="n">2</td><td>Structure & liquidity</td><td class="tf">4H</td><td class="val empty">Loading…</td><td class="imp"><span class="chip N">–</span></td></tr><tr><td class="n">3</td><td>ATR (14) volatility</td><td class="tf">1D</td><td class="val empty">Loading…</td><td class="imp"><span class="chip N">–</span></td></tr><tr><td class="n">4</td><td>Funding rate</td><td class="tf">8H</td><td class="val empty">Loading…</td><td class="imp"><span class="chip N">–</span></td></tr><tr><td class="n">5</td><td>Long/short ratio</td><td class="tf">8H</td><td class="val empty">Loading…</td><td class="imp"><span class="chip N">–</span></td></tr><tr><td class="n">6</td><td>EMA stack</td><td class="tf">4H</td><td class="val empty">Loading…</td><td class="imp"><span class="chip N">–</span></td></tr><tr><td class="n">7</td><td>RSI momentum</td><td class="tf">4H</td><td class="val empty">Loading…</td><td class="imp"><span class="chip N">–</span></td></tr><tr><td class="n">8</td><td>Taker flow (CVD proxy)</td><td class="tf">Live</td><td class="val empty">Loading…</td><td class="imp"><span class="chip N">–</span></td></tr><tr><td class="n">9</td><td>Volume</td><td class="tf">4H</td><td class="val empty">Loading…</td><td class="imp"><span class="chip N">–</span></td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Manual inputs (optional)</h2>
+    <div class="manual">
+      <label class="field" for="funding"><span>Binance funding % override (blank = use live perp premium)</span><input id="funding" type="number" step="0.0001" inputmode="decimal" placeholder="blank = live proxy"></label>
+      <label class="field" for="lsLong"><span>Long accounts % (Binance L/S, e.g. 65)</span><input id="lsLong" type="number" step="1" min="0" max="100" inputmode="decimal" placeholder="blank = neutral"></label>
+    </div>
+    <p class="note" id="manualNote" style="margin-top:8px">Binance can't be reached from this page. Funding is scored live from the gap between Crypto.com's ETH perpetual and the spot index: +0.05% or more is crowded longs (short +5), −0.05% or less is long +5. Type a Binance funding rate to override it. No free connector offers a long/short account ratio, so that box stays manual. Typed values are saved in this browser only. Typed funding of 0.01% or more, or 60%+ long accounts, counts as short +5; negative funding or 40% or fewer long accounts counts as long +5.</p>
+  </section>
+
+  </div>
+  </div>
+
+  <p class="note">Data source: opened inside claude.ai the page uses the Crypto.com connector; opened as a downloaded file in your browser it pulls Binance directly (spot, plus funding, open interest and the long/short account ratio from Binance Futures). Method: support is the lowest 4H low of the last ~8 days; resistance is the nearest 4H swing high above price. The EMA stack adds EMA 100 when enough candles are available (Binance). Taker flow uses recent trades as a stand-in for CVD. Liquidity pools are untouched 4H and 1D swing highs and lows, where stop orders usually sit; a real liquidation heatmap is not available from any free feed. Order book walls are limited to the depth each feed returns. This is a rule-based read of the data, not financial advice.</p>
+</div>
+
+<script>
+/*ENGINE*/
+</script>
+<script>
+(function () {
+  const E = window.EthEngine;
+  const SERVER = "Crypto.com";
+  const HOUR = 3600000;
+  const $ = id => document.getElementById(id);
+  const feeds = {};
+  const stamps = {};
+  let mcp = null, lastResult = null, lastUpdated = null;
+
+  const WATCHES = [
+    { key: "ticker", tool: "get_ticker", input: { instrument_name: "ETH_USDT" } },
+    { key: "eth4h", tool: "get_candlestick", input: { instrument_name: "ETH_USDT", timeframe: "4h" } },
+    { key: "eth1d", tool: "get_candlestick", input: { instrument_name: "ETH_USDT", timeframe: "1D" } },
+    { key: "btc1d", tool: "get_candlestick", input: { instrument_name: "BTC_USDT", timeframe: "1D" } },
+    { key: "trades", tool: "get_trades", input: { instrument_name: "ETH_USDT", count: 150 } },
+    { key: "book", tool: "get_book", input: { instrument_name: "ETH_USDT", depth: 50 }, optional: true },
+    { key: "mark", tool: "get_mark_price", input: { instrument_name: "ETHUSD-PERP" }, optional: true },
+    { key: "index", tool: "get_index_price", input: { instrument_name: "ETHUSD-INDEX" }, optional: true },
+    { key: "perp", tool: "get_ticker", input: { instrument_name: "ETHUSD-PERP" }, optional: true },
+  ];
+  let lastLiq = null;
+
+  function loadManual() {
+    try {
+      const f = localStorage.getItem("eth.funding"), l = localStorage.getItem("eth.lsLong");
+      if (f !== null) $("funding").value = f;
+      if (l !== null) $("lsLong").value = l;
+    } catch (e) {}
+  }
+  function saveManual() {
+    try { localStorage.setItem("eth.funding", $("funding").value); localStorage.setItem("eth.lsLong", $("lsLong").value); } catch (e) {}
+  }
+  const numOrNull = v => (v === "" || v == null || isNaN(+v)) ? null : +v;
+
+  function showMsg(text) { const m = $("msg"); if (!text) { m.hidden = true; return; } m.textContent = text; m.hidden = false; }
+  function setStatus(kind, text) { $("dot").className = "dot " + (kind || ""); $("statusText").textContent = text; }
+
+  function errorText(err) {
+    switch (err && err.code) {
+      case "server_not_connected": return "Crypto.com isn't connected for you. Add it in claude.ai Settings → Connectors, then reload.";
+      case "needs_reauth": return "Crypto.com needs reconnecting. Reconnect it in claude.ai Settings → Connectors.";
+      case "selection_required": return "You have more than one Crypto.com connector. Choose one when claude.ai asks, then reload.";
+      case "not_in_manifest": return "Crypto.com access is turned off for this page. Allow it from the page's Permissions menu.";
+      case "approval_required": return "Crypto.com calls need your approval. Press Refresh now and allow them.";
+      case "blocked_by_policy": return "Your organization blocks Crypto.com for this page.";
+      case "server_unavailable": return "Crypto.com didn't answer. Showing the last good numbers; the next hourly pull will try again.";
+      case "tool_error": return "Crypto.com returned an error: " + (err.message || "unknown");
+      default: return "Data pull failed (" + ((err && err.code) || "unknown") + "). Showing the last good numbers.";
+    }
+  }
+
+  function fmt$(n) { return "$" + E.fmt(n); }
+  function istTime(ms) {
+    return new Date(ms).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "Asia/Kolkata" }) + " IST";
+  }
+  function istDate(t) {
+    try { return new Date(t).toLocaleDateString("en-IN", { day: "numeric", month: "short", timeZone: "Asia/Kolkata" }); } catch (e) { return ""; }
+  }
+
+  let mode = "crypto", bin = null;
+  function compute() {
+    if (mode === "binance") { if (bin) run(bin); return; }
+    if (!WATCHES.every(w => w.optional || feeds[w.key])) return;
+    const eth4h = E.candlesFrom(feeds.eth4h), eth1d = E.candlesFrom(feeds.eth1d), btc1d = E.candlesFrom(feeds.btc1d);
+    const trades = E.tradesFrom(feeds.trades);
+    let price = E.priceFrom(feeds.ticker);
+    if (!isFinite(price) && eth4h.length) price = eth4h[eth4h.length - 1].c;
+    if (eth4h.length < 30 || eth1d.length < 16 || btc1d.length < 21 || !isFinite(price)) {
+      showMsg("Crypto.com returned less data than expected, so the matrix can't be computed yet.");
+      return;
+    }
+    const pick = (pl, f) => { const x = pl && (pl.data && !Array.isArray(pl.data) ? pl.data : Array.isArray(pl && pl.data) ? pl.data[0] : pl); return x ? +x[f] : NaN; };
+    const mark = pick(feeds.mark, "price"), index = pick(feeds.index, "price"), oiRaw = pick(feeds.perp, "open_interest");
+    const premium = isFinite(mark) && isFinite(index) && index > 0 ? (mark - index) / index * 100 : null;
+    run({ price, eth4h, eth1d, btc1d, trades, premium, oi: isFinite(oiRaw) ? oiRaw : null, book: feeds.book ? E.bookFrom(feeds.book) : null });
+  }
+
+  function run(d) {
+    const mf = numOrNull($("funding").value), ml = numOrNull($("lsLong").value);
+    const funding = mf != null ? mf : (d.funding != null ? d.funding : null);
+    const lsLong = ml != null ? ml : (d.lsLong != null ? d.lsLong : null);
+    lastResult = E.analyze({ price: d.price, eth4h: d.eth4h, eth1d: d.eth1d, btc1d: d.btc1d, trades: d.trades, funding, lsLong, premium: d.premium, oi: d.oi,
+      fundingSrc: mf != null ? "manual" : "Binance live", lsSrc: ml != null ? "manual" : "Binance live" });
+    render(lastResult);
+    lastLiq = E.liquidity({ price: d.price, eth4h: d.eth4h, eth1d: d.eth1d, book: d.book });
+    renderLiq(lastLiq, d.price);
+  }
+
+  // ---- Binance (used when the page is opened as a downloaded file) ----
+  const BS = "https://api.binance.com", BF = "https://fapi.binance.com";
+  async function j(url) { const r = await fetch(url, { cache: "no-store" }); if (!r.ok) throw new Error(r.status + " " + url); return r.json(); }
+  // Binance public market-data hosts, tried in order until one answers.
+  const SPOT_HOSTS = ["https://data-api.binance.vision", "https://api.binance.com", "https://api1.binance.com", "https://api2.binance.com", "https://api3.binance.com", "https://api4.binance.com", "https://api-gcp.binance.com"];
+  let spotHost = null;
+  async function pickSpotHost() {
+    const order = spotHost ? [spotHost].concat(SPOT_HOSTS.filter(h => h !== spotHost)) : SPOT_HOSTS;
+    const tried = [];
+    for (const h of order) {
+      try { await j(h + "/api/v3/ping"); spotHost = h; return h; } catch (e) { tried.push(h.replace("https://", "")); }
+    }
+    throw new Error("none of: " + tried.join(", "));
+  }
+  const kl = a => a.map(k => ({ t: k[0], o: +k[1], h: +k[2], l: +k[3], c: +k[4], v: +k[5] }));
+  async function fetchBinance() {
+    beginBusy(); setStatus("stale", "Refreshing…");
+    let ok = false;
+    try {
+      const H = await pickSpotHost();
+      $("src").textContent = "Binance (" + H.replace("https://", "") + ") · hourly";
+      const [tk, k4, kd, bd, tr, dp] = await Promise.all([
+        j(H + "/api/v3/ticker/price?symbol=ETHUSDT"),
+        j(H + "/api/v3/klines?symbol=ETHUSDT&interval=4h&limit=150"),
+        j(H + "/api/v3/klines?symbol=ETHUSDT&interval=1d&limit=60"),
+        j(H + "/api/v3/klines?symbol=BTCUSDT&interval=1d&limit=60"),
+        j(H + "/api/v3/aggTrades?symbol=ETHUSDT&limit=500"),
+        j(H + "/api/v3/depth?symbol=ETHUSDT&limit=1000"),
+      ]);
+      const fut = await Promise.allSettled([
+        j(BF + "/fapi/v1/premiumIndex?symbol=ETHUSDT"),
+        j(BF + "/fapi/v1/openInterest?symbol=ETHUSDT"),
+        j(BF + "/futures/data/globalLongShortAccountRatio?symbol=ETHUSDT&period=4h&limit=1"),
+      ]);
+      const [pi, oi, ls] = fut.map(x => x.status === "fulfilled" ? x.value : null);
+      bin = {
+        price: +tk.price, eth4h: kl(k4), eth1d: kl(kd), btc1d: kl(bd),
+        trades: tr.map(t => ({ side: t.m ? "sell" : "buy", q: +t.q })),
+        book: { asks: dp.asks.map(x => ({ p: +x[0], q: +x[1] })), bids: dp.bids.map(x => ({ p: +x[0], q: +x[1] })) },
+        funding: pi ? +pi.lastFundingRate * 100 : null,
+        premium: pi ? (+pi.markPrice - +pi.indexPrice) / +pi.indexPrice * 100 : null,
+        oi: oi ? +oi.openInterest : null,
+        lsLong: ls && ls[0] ? +ls[0].longAccount * 100 : null,
+      };
+      lastUpdated = Date.now();
+      showMsg(fut.some(x => x.status !== "fulfilled") ? "Binance Futures data (funding, open interest or long/short) didn't load, so those rows fall back to the manual boxes." : "");
+      setStatus("live", "Updated " + istTime(lastUpdated));
+      run(bin); tickClock(); ok = true;
+    } catch (e) {
+      setStatus(lastUpdated ? "stale" : "", lastUpdated ? "Last good " + istTime(lastUpdated) : "No data");
+      showMsg("Couldn't reach Binance. Tried " + (e && e.message ? e.message : "all hosts") + ". If you opened this inside the Claude app or a file preview, open the file in Chrome instead. Otherwise Binance is blocked on this network: try mobile data or a different Wi-Fi, then press Refresh now.");
+    } finally { endBusy(ok); }
+  }
+
+  function renderLiq(L, price) {
+    const list = (el, arr) => {
+      el.textContent = "";
+      arr.forEach(p => {
+        const li = document.createElement("li");
+        const left = document.createElement("span");
+        left.textContent = fmt$(p.price);
+        if (p.equal) { const e = document.createElement("span"); e.className = "eq"; e.textContent = "equal levels"; left.appendChild(e); }
+        const right = document.createElement("span"); right.className = "d";
+        right.textContent = (p.dist >= 0 ? "+" : "") + p.dist.toFixed(2) + "% · " + p.tf;
+        li.className = "arrive"; li.style.animationDelay = (el.children.length * 70) + "ms";
+        li.append(left, right); el.appendChild(li);
+      });
+    };
+    list($("liqAbove"), L.above); list($("liqBelow"), L.below);
+    if (L.wallAsk) {
+      $("wallAsk").textContent = "Biggest ask wall: " + fmt$(L.wallAsk.p) + " · " + L.wallAsk.q.toFixed(2) + " ETH (book shows up to " + fmt$(L.bookDepth.askTop) + ")";
+      $("wallBid").textContent = "Biggest bid wall: " + fmt$(L.wallBid.p) + " · " + L.wallBid.q.toFixed(2) + " ETH (book shows down to " + fmt$(L.bookDepth.bidBottom) + ")";
+    } else {
+      $("wallAsk").textContent = "Order book not loaded"; $("wallBid").textContent = "Order book not loaded";
+    }
+    const a = L.above[0], b = L.below[0];
+    const nearer = Math.abs(a.dist) < Math.abs(b.dist) ? "above at " + fmt$(a.price) : "below at " + fmt$(b.price);
+    $("magnet").textContent = "Nearer pool is " + nearer + ". Price often reaches for the closer pool first; a sweep and fast reversal there is a common trap.";
+  }
+
+
+  // ---- Refresh animation helpers ----
+  let busyStart = 0, prevPrice = null, prevImpacts = null, doneTimer = null;
+  const reduce = (() => { try { return matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) { return false; } })();
+  function beginBusy() {
+    clearTimeout(doneTimer);
+    busyStart = Date.now();
+    const b = $("refresh"); b.classList.remove("done", "fail"); b.classList.add("busy"); b.disabled = true;
+    $("refreshLbl").textContent = "Refreshing…";
+    document.querySelector(".verdict").classList.add("loading");
+    document.body.classList.add("busy-page");
+  }
+  function endBusy(ok) {
+    const wait = Math.max(0, 700 - (Date.now() - busyStart));
+    setTimeout(() => {
+      const b = $("refresh"); b.classList.remove("busy"); b.disabled = false;
+      document.querySelector(".verdict").classList.remove("loading");
+      document.body.classList.remove("busy-page");
+      b.classList.add(ok ? "done" : "fail");
+      $("refreshLbl").textContent = ok ? "Updated" : "Failed";
+      doneTimer = setTimeout(() => { b.classList.remove("done", "fail"); $("refreshLbl").textContent = "Refresh now"; }, 1800);
+    }, wait);
+  }
+  function tweenPrice(from, to) {
+    const el = $("vPrice");
+    if (reduce || from == null || from === to) { el.textContent = fmt$(to); return; }
+    const t0 = performance.now(), dur = 800;
+    const step = now => {
+      const k = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+      el.textContent = fmt$(from + (to - from) * e);
+      if (k < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }
+  function showDelta(from, to) {
+    const el = $("vPrice"), d = $("vDelta");
+    el.classList.remove("up", "down"); d.className = "delta";
+    if (from == null || from === to) return;
+    void el.offsetWidth;
+    const up = to > from;
+    el.classList.add(up ? "up" : "down");
+    d.textContent = (up ? "▲ +" : "▼ ") + E.fmt(to - from);
+    d.classList.add(up ? "up" : "down", "show");
+  }
+
+  function render(r) {
+    $("vPrice").className = "price";
+    if (prevPrice !== r.price) { tweenPrice(prevPrice, r.price); showDelta(prevPrice, r.price); }
+    prevPrice = r.price;
+    const sweptTxt = r.sweptRecovered ? "downside liquidity swept on " + istDate(r.supportDate) : "8-day range low";
+    $("vSupport").className = "v";
+    $("vSupport").innerHTML = "<b>" + fmt$(r.support) + "</b> <em>(" + sweptTxt + ")</em>";
+    $("vRes").className = "v";
+    let res = "<b>" + fmt$(r.resistance) + "</b> <em>(" + r.resistanceNote + ")</em>";
+    if (r.passedLvl) res += "<br><em>Passed: " + fmt$(r.passedLvl) + ", now first support on a retest</em>";
+    $("vRes").innerHTML = res;
+    $("vLong").className = "v"; $("vLong").innerHTML = "<b>" + r.long + "%</b>";
+    $("vShort").className = "v"; $("vShort").innerHTML = "<b>" + r.short + "%</b>";
+    $("barL").style.flexBasis = r.long + "%"; $("barL").textContent = "LONG " + r.long + "%";
+    $("barS").style.flexBasis = r.short + "%"; $("barS").textContent = r.short + "% SHORT";
+    const lean = r.long > r.short ? "Long-favoured" : r.long < r.short ? "Short-favoured" : "No edge";
+    $("bias").innerHTML = "<b>" + lean + ".</b> " + r.rows.filter(x => x.impact > 0).length + " signals lean long, " + r.rows.filter(x => x.impact < 0).length + " lean short, " + r.rows.filter(x => x.impact === 0).length + " neutral.";
+    $("copy").disabled = false;
+
+    const tb = $("rows"); tb.textContent = "";
+    for (const row of r.rows) {
+      const tr = document.createElement("tr");
+      const chip = row.impact > 0 ? ["L", "Long +" + row.impact] : row.impact < 0 ? ["S", "Short +" + (-row.impact)] : ["N", "Neutral"];
+      tr.innerHTML = '<td class="n"></td><td></td><td class="tf"></td><td class="val"></td><td class="imp"><span class="chip ' + chip[0] + '"></span></td>';
+      tr.children[0].textContent = row.n; tr.children[1].textContent = row.name; tr.children[2].textContent = row.frame;
+      tr.children[3].textContent = row.value; tr.children[4].firstChild.textContent = chip[1];
+      if (prevImpacts && prevImpacts[row.n] !== undefined && prevImpacts[row.n] !== row.impact) tr.classList.add("changed");
+      tb.appendChild(tr);
+    }
+    prevImpacts = Object.fromEntries(r.rows.map(x => [x.n, x.impact]));
+  }
+
+  function linesText(r) {
+    let res = fmt$(r.resistance);
+    if (r.passedLvl) res += " (" + fmt$(r.passedLvl) + " passed, now first support on a retest)";
+    let liq = "";
+    if (lastLiq) liq = "\nLiquidity above: " + fmt$(lastLiq.above[0].price) + " (" + lastLiq.above[0].dist.toFixed(2) + "%)\nLiquidity below: " + fmt$(lastLiq.below[0].price) + " (" + lastLiq.below[0].dist.toFixed(2) + "%)";
+    return "Current value: " + fmt$(r.price) + "\nSupport: " + fmt$(r.support) + (r.sweptRecovered ? " (downside liquidity swept)" : "") + "\nResistance: " + res + liq + "\nLong: " + r.long + "%\nShort: " + r.short + "%";
+  }
+
+  function tickClock() {
+    if (!lastUpdated) { $("next").textContent = ""; return; }
+    const mins = Math.max(0, Math.round((lastUpdated + HOUR - Date.now()) / 60000));
+    $("next").textContent = "Next pull in " + mins + " min";
+  }
+
+  function onEvent(key, ev) {
+    if (ev.type === "data") {
+      feeds[key] = ev.result.payload;
+      stamps[key] = ev.result.cache ? ev.result.cache.storedAt : Date.now();
+      lastUpdated = Math.min(...Object.values(stamps));
+      showMsg("");
+      setStatus(ev.result.cache && ev.result.cache.revalidating ? "stale" : "live", "Updated " + istTime(lastUpdated));
+      compute(); tickClock();
+    } else {
+      const err = ev.error || {};
+      const denial = ["needs_reauth", "server_not_connected", "blocked_by_policy", "approval_required", "not_in_manifest", "selection_required"].includes(err.code);
+      if (denial) { delete feeds[key]; setStatus("", "Not connected"); }
+      else if (lastUpdated) setStatus("stale", "Last good " + istTime(lastUpdated));
+      showMsg(errorText(err));
+    }
+  }
+
+  async function refreshNow() {
+    if (mode === "binance") return fetchBinance();
+    if (!mcp) return;
+    beginBusy();
+    setStatus("stale", "Refreshing…");
+    let fails = 0;
+    try {
+      await Promise.all(WATCHES.map(w => mcp.callTool(SERVER, w.tool, w.input, { cache: { staleTime: 60000, refresh: true } })
+        .then(res => onEvent(w.key, { type: "data", result: res }))
+        .catch(err => { if (!w.optional) fails++; onEvent(w.key, { type: "error", error: err }); })));
+    } finally { endBusy(fails === 0); }
+  }
+
+  $("refresh").addEventListener("click", refreshNow);
+  $("copy").addEventListener("click", () => {
+    if (!lastResult) return;
+    const text = linesText(lastResult);
+    const done = ok => { $("copyNote").textContent = ok ? "Copied." : "Copy blocked here. Select the lines above instead."; };
+    try { navigator.clipboard.writeText(text).then(() => done(true), () => done(false)); } catch (e) { done(false); }
+  });
+  ["funding", "lsLong"].forEach(id => $(id).addEventListener("input", () => { saveManual(); compute(); }));
+  loadManual();
+  setInterval(tickClock, 30000);
+
+  (async () => {
+    mcp = window.claude && window.claude.use ? await window.claude.use("mcp") : null;
+    if (!mcp) {
+      mode = "binance";
+      $("src").textContent = "Binance spot + futures · hourly";
+      $("manualNote").textContent = "Funding rate, open interest and the long/short account ratio load live from Binance Futures. Type a value to override it; typed values are saved in this browser only. Funding of 0.01% or more, or 60%+ long accounts, counts as short +5; negative funding or 40% or fewer long accounts counts as long +5.";
+      fetchBinance();
+      setInterval(fetchBinance, HOUR);
+      return;
+    }
+    $("src").textContent = "Crypto.com spot · hourly";
+    for (const w of WATCHES) {
+      mcp.watchTool(SERVER, w.tool, w.input, ev => onEvent(w.key, ev), { cache: { staleTime: 60000 }, refetchInterval: HOUR });
+    }
+  })();
+})();
+</script>
