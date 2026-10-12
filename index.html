@@ -1,4 +1,3 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>ETHUSDT Signal Board</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=optional">
@@ -295,11 +294,13 @@ input { font-family: var(--font-data); font-size: 15px; color: var(--fg); backgr
     const resistance = above.length ? above[0].p : rangeHigh;
     const resistanceNote = above.length ? "nearest 4H swing high above" : "50-bar range high";
     const passedLvl = passed.length ? passed[0].p : null;
+    const broken = pv.lo.filter(p => p.p > price && p.i >= win.length - 15).sort((a, b) => a.p - b.p);
+    const brokenLo = broken.length ? broken[0].p : null;
     const nearSupport = passedLvl || (lowsBelow.length ? lowsBelow[0].p : null);
     const sweptRecovered = (price - rangeLow) / rangeLow > 0.03;
     let stPts = 0, stTxt;
     if (passedLvl) { stPts = 5; stTxt = `Broke above swing high $${fmt(passedLvl)}`; }
-    else if (lowsBelow.length && price < lowsBelow[0].p) { stPts = -5; stTxt = "Lost nearest swing low"; }
+    else if (brokenLo) { stPts = -5; stTxt = `Broke below swing low $${fmt(brokenLo)}`; }
     else stTxt = "Inside range, no break";
     if (sweptRecovered) stTxt += ` · lows swept at $${fmt(rangeLow)} and recovered`;
     add(2, "Structure & liquidity", "4H", stTxt, stPts);
@@ -767,5 +768,3 @@ input { font-family: var(--font-data); font-size: 15px; color: var(--fg); backgr
   })();
 })();
 </script>
-
-</body></html>
