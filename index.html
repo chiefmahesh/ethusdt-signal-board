@@ -85,7 +85,7 @@ input { font-family: var(--font-data); font-size: 15px; color: var(--fg); backgr
 
 <div class="wrap">
   <header>
-    <h1>ETHUSDT <small>Crypto.com spot · hourly</small></h1>
+    <h1>ETHUSDT <small id="src">connecting · hourly</small></h1>
     <div class="meta">
       <span id="status"><span class="dot" id="dot"></span><span id="statusText">Connecting to Crypto.com…</span></span>
       <span id="next"></span>
@@ -108,7 +108,7 @@ input { font-family: var(--font-data); font-size: 15px; color: var(--fg); backgr
       <div class="S" id="barS" style="flex-basis:50%">SHORT</div>
     </div>
     <div class="actions">
-      <span class="bias" id="bias">The bias appears once all five feeds have loaded.</span>
+      <span class="bias" id="bias">The bias appears once the market data has loaded.</span>
     </div>
     <div class="actions"><button id="copy" type="button" disabled>Copy summary</button><span class="bias" id="copyNote"></span></div>
   </section>
@@ -149,7 +149,7 @@ input { font-family: var(--font-data); font-size: 15px; color: var(--fg); backgr
     <p class="note" style="margin-top:8px">Binance can't be reached from this page. Funding is scored live from the gap between Crypto.com's ETH perpetual and the spot index: +0.05% or more is crowded longs (short +5), −0.05% or less is long +5. Type a Binance funding rate to override it. No free connector offers a long/short account ratio, so that box stays manual. Typed values are saved in this browser only. Typed funding of 0.01% or more, or 60%+ long accounts, counts as short +5; negative funding or 40% or fewer long accounts counts as long +5.</p>
   </section>
 
-  <p class="note">Method: support is the lowest 4H low of the last ~8 days; resistance is the nearest 4H swing high above price. EMA stack uses 10/20/50 because the feed returns 50 candles, not enough for EMA 100. Taker flow uses the last 150 trades as a stand-in for CVD. Liquidity pools are untouched 4H and 1D swing highs and lows, where stop orders usually sit; a real liquidation heatmap is not available from any free feed. The order book feed only goes 50 levels deep, so walls are shown for the price right next to market. This is a rule-based read of the data, not financial advice.</p>
+  <p class="note">Data source: opened inside claude.ai the page uses the Crypto.com connector; opened as a downloaded file in your browser it pulls Binance directly (spot, plus funding, open interest and the long/short account ratio from Binance Futures). Method: support is the lowest 4H low of the last ~8 days; resistance is the nearest 4H swing high above price. The EMA stack adds EMA 100 when enough candles are available (Binance). Taker flow uses recent trades as a stand-in for CVD. Liquidity pools are untouched 4H and 1D swing highs and lows, where stop orders usually sit; a real liquidation heatmap is not available from any free feed. Order book walls are limited to the depth each feed returns. This is a rule-based read of the data, not financial advice.</p>
 </div>
 
 <script>
@@ -199,7 +199,7 @@ input { font-family: var(--font-data); font-size: 15px; color: var(--fg); backgr
     return { hi, lo };
   }
 
-  function analyze({ price, eth4h, eth1d, btc1d, trades, funding = null, lsLong = null, premium = null, oi = null }) {
+  function analyze({ price, eth4h, eth1d, btc1d, trades, funding = null, lsLong = null, premium = null, oi = null, fundingSrc = "manual", lsSrc = "manual" }) {
     const rows = [];
     let long = 50;
     const add = (n, name, frame, value, longPts) => { long += longPts; rows.push({ n, name, frame, value, impact: longPts }); };
@@ -220,12 +220,13 @@ input { font-family: var(--font-data); font-size: 15px; color: var(--fg); backgr
     add(1, "BTC trend", "1D", `${btcTxt} · 7d ${b7 >= 0 ? "+" : ""}${b7.toFixed(1)}%`, btcPts);
 
     // 2. Structure / liquidity (4H)
-    const pv = pivots(closed4h, 2);
-    const rangeLow = Math.min(...closed4h.map(x => x.l));
-    const rangeLowBar = closed4h.find(x => x.l === rangeLow);
-    const rangeHigh = Math.max(...closed4h.map(x => x.h));
+    const win = closed4h.slice(-50);
+    const pv = pivots(win, 2);
+    const rangeLow = Math.min(...win.map(x => x.l));
+    const rangeLowBar = win.find(x => x.l === rangeLow);
+    const rangeHigh = Math.max(...win.map(x => x.h));
     const above = pv.hi.filter(p => p.p > price).sort((a, b) => a.p - b.p);
-    const passed = pv.hi.filter(p => p.p < price && p.i >= closed4h.length - 15).sort((a, b) => b.p - a.p);
+    const passed = pv.hi.filter(p => p.p < price && p.i >= win.length - 15).sort((a, b) => b.p - a.p);
     const lowsBelow = pv.lo.filter(p => p.p < price).sort((a, b) => b.p - a.p);
     const resistance = above.length ? above[0].p : rangeHigh;
     const resistanceNote = above.length ? "nearest 4H swing high above" : "50-bar range high";
@@ -257,23 +258,27 @@ input { font-family: var(--font-data); font-size: 15px; color: var(--fg); backgr
       let p = 0, t = "Neutral";
       if (funding >= 0.01) { p = -5; t = "Longs paying a high premium (crowded)"; }
       else if (funding < 0) { p = 5; t = "Shorts paying (squeeze fuel)"; }
-      add(4, "Funding rate", "8H", `${funding.toFixed(4)}% · ${t} · manual`, p);
+      const oiT = oi ? ` · OI ${Math.round(oi).toLocaleString("en-US")} ETH` : "";
+      add(4, "Funding rate", "8H", `${funding.toFixed(4)}% · ${t}${oiT} · ${fundingSrc}`, p);
     }
     if (lsLong == null || isNaN(lsLong)) add(5, "Long/short ratio", "8H", "Not in feed · enter it below to score", 0);
     else {
       let p = 0, t = "Balanced";
       if (lsLong >= 60) { p = -5; t = "Retail heavily long (contrarian short)"; }
       else if (lsLong <= 40) { p = 5; t = "Retail heavily short (contrarian long)"; }
-      add(5, "Long/short ratio", "8H", `${lsLong.toFixed(0)}% long accounts · ${t} · manual`, p);
+      add(5, "Long/short ratio", "8H", `${lsLong.toFixed(0)}% long accounts · ${t} · ${lsSrc}`, p);
     }
 
     // 6. EMA stack (4H)
-    const e10 = ema(closes4h, 10), e20 = ema(closes4h, 20), e50 = ema(closes4h, 50);
+    const e10 = ema(closes4h, 10), e20 = ema(closes4h, 20), e50 = ema(closes4h, 50), e100 = ema(closes4h, 100);
+    const st = e100 != null ? [e10, e20, e50, e100] : [e10, e20, e50];
+    const lbl = e100 != null ? "10/20/50/100" : "10/20/50";
+    const up = st.every((v, i) => i === 0 || st[i - 1] > v), dn = st.every((v, i) => i === 0 || st[i - 1] < v);
     let emaPts = 0, emaTxt;
-    if (e10 > e20 && e20 > e50) { emaPts = 5; emaTxt = "Bullish (10 > 20 > 50)"; }
-    else if (e10 < e20 && e20 < e50) { emaPts = -5; emaTxt = "Bearish (10 < 20 < 50)"; }
-    else emaTxt = "Mixed";
-    add(6, "EMA stack", "4H", `${emaTxt} · ${fmt(e10)} / ${fmt(e20)} / ${fmt(e50)}`, emaPts);
+    if (up) { emaPts = 5; emaTxt = `Bullish (${lbl.split("/").join(" > ")})`; }
+    else if (dn) { emaPts = -5; emaTxt = `Bearish (${lbl.split("/").join(" < ")})`; }
+    else emaTxt = `Mixed (${lbl})`;
+    add(6, "EMA stack", "4H", `${emaTxt} · ${st.map(fmt).join(" / ")}`, emaPts);
 
     // 7. RSI (4H)
     const r = rsi(closes4h, 14);
@@ -440,7 +445,9 @@ input { font-family: var(--font-data); font-size: 15px; color: var(--fg); backgr
     try { return new Date(t).toLocaleDateString("en-IN", { day: "numeric", month: "short", timeZone: "Asia/Kolkata" }); } catch (e) { return ""; }
   }
 
+  let mode = "crypto", bin = null;
   function compute() {
+    if (mode === "binance") { if (bin) run(bin); return; }
     if (!WATCHES.every(w => w.optional || feeds[w.key])) return;
     const eth4h = E.candlesFrom(feeds.eth4h), eth1d = E.candlesFrom(feeds.eth1d), btc1d = E.candlesFrom(feeds.btc1d);
     const trades = E.tradesFrom(feeds.trades);
@@ -453,10 +460,71 @@ input { font-family: var(--font-data); font-size: 15px; color: var(--fg); backgr
     const pick = (pl, f) => { const x = pl && (pl.data && !Array.isArray(pl.data) ? pl.data : Array.isArray(pl && pl.data) ? pl.data[0] : pl); return x ? +x[f] : NaN; };
     const mark = pick(feeds.mark, "price"), index = pick(feeds.index, "price"), oiRaw = pick(feeds.perp, "open_interest");
     const premium = isFinite(mark) && isFinite(index) && index > 0 ? (mark - index) / index * 100 : null;
-    lastResult = E.analyze({ price, eth4h, eth1d, btc1d, trades, funding: numOrNull($("funding").value), lsLong: numOrNull($("lsLong").value), premium, oi: isFinite(oiRaw) ? oiRaw : null });
+    run({ price, eth4h, eth1d, btc1d, trades, premium, oi: isFinite(oiRaw) ? oiRaw : null, book: feeds.book ? E.bookFrom(feeds.book) : null });
+  }
+
+  function run(d) {
+    const mf = numOrNull($("funding").value), ml = numOrNull($("lsLong").value);
+    const funding = mf != null ? mf : (d.funding != null ? d.funding : null);
+    const lsLong = ml != null ? ml : (d.lsLong != null ? d.lsLong : null);
+    lastResult = E.analyze({ price: d.price, eth4h: d.eth4h, eth1d: d.eth1d, btc1d: d.btc1d, trades: d.trades, funding, lsLong, premium: d.premium, oi: d.oi,
+      fundingSrc: mf != null ? "manual" : "Binance live", lsSrc: ml != null ? "manual" : "Binance live" });
     render(lastResult);
-    lastLiq = E.liquidity({ price, eth4h, eth1d, book: feeds.book ? E.bookFrom(feeds.book) : null });
-    renderLiq(lastLiq, price);
+    lastLiq = E.liquidity({ price: d.price, eth4h: d.eth4h, eth1d: d.eth1d, book: d.book });
+    renderLiq(lastLiq, d.price);
+  }
+
+  // ---- Binance (used when the page is opened as a downloaded file) ----
+  const BS = "https://api.binance.com", BF = "https://fapi.binance.com";
+  async function j(url) { const r = await fetch(url, { cache: "no-store" }); if (!r.ok) throw new Error(r.status + " " + url); return r.json(); }
+  // Binance public market-data hosts, tried in order until one answers.
+  const SPOT_HOSTS = ["https://data-api.binance.vision", "https://api.binance.com", "https://api1.binance.com", "https://api2.binance.com", "https://api3.binance.com", "https://api4.binance.com", "https://api-gcp.binance.com"];
+  let spotHost = null;
+  async function pickSpotHost() {
+    const order = spotHost ? [spotHost].concat(SPOT_HOSTS.filter(h => h !== spotHost)) : SPOT_HOSTS;
+    const tried = [];
+    for (const h of order) {
+      try { await j(h + "/api/v3/ping"); spotHost = h; return h; } catch (e) { tried.push(h.replace("https://", "")); }
+    }
+    throw new Error("none of: " + tried.join(", "));
+  }
+  const kl = a => a.map(k => ({ t: k[0], o: +k[1], h: +k[2], l: +k[3], c: +k[4], v: +k[5] }));
+  async function fetchBinance() {
+    $("refresh").disabled = true; setStatus("stale", "Refreshing…");
+    try {
+      const H = await pickSpotHost();
+      $("src").textContent = "Binance (" + H.replace("https://", "") + ") · hourly";
+      const [tk, k4, kd, bd, tr, dp] = await Promise.all([
+        j(H + "/api/v3/ticker/price?symbol=ETHUSDT"),
+        j(H + "/api/v3/klines?symbol=ETHUSDT&interval=4h&limit=150"),
+        j(H + "/api/v3/klines?symbol=ETHUSDT&interval=1d&limit=60"),
+        j(H + "/api/v3/klines?symbol=BTCUSDT&interval=1d&limit=60"),
+        j(H + "/api/v3/aggTrades?symbol=ETHUSDT&limit=500"),
+        j(H + "/api/v3/depth?symbol=ETHUSDT&limit=1000"),
+      ]);
+      const fut = await Promise.allSettled([
+        j(BF + "/fapi/v1/premiumIndex?symbol=ETHUSDT"),
+        j(BF + "/fapi/v1/openInterest?symbol=ETHUSDT"),
+        j(BF + "/futures/data/globalLongShortAccountRatio?symbol=ETHUSDT&period=4h&limit=1"),
+      ]);
+      const [pi, oi, ls] = fut.map(x => x.status === "fulfilled" ? x.value : null);
+      bin = {
+        price: +tk.price, eth4h: kl(k4), eth1d: kl(kd), btc1d: kl(bd),
+        trades: tr.map(t => ({ side: t.m ? "sell" : "buy", q: +t.q })),
+        book: { asks: dp.asks.map(x => ({ p: +x[0], q: +x[1] })), bids: dp.bids.map(x => ({ p: +x[0], q: +x[1] })) },
+        funding: pi ? +pi.lastFundingRate * 100 : null,
+        premium: pi ? (+pi.markPrice - +pi.indexPrice) / +pi.indexPrice * 100 : null,
+        oi: oi ? +oi.openInterest : null,
+        lsLong: ls && ls[0] ? +ls[0].longAccount * 100 : null,
+      };
+      lastUpdated = Date.now();
+      showMsg(fut.some(x => x.status !== "fulfilled") ? "Binance Futures data (funding, open interest or long/short) didn't load, so those rows fall back to the manual boxes." : "");
+      setStatus("live", "Updated " + istTime(lastUpdated));
+      run(bin); tickClock();
+    } catch (e) {
+      setStatus(lastUpdated ? "stale" : "", lastUpdated ? "Last good " + istTime(lastUpdated) : "No data");
+      showMsg("Couldn't reach Binance. Tried " + (e && e.message ? e.message : "all hosts") + ". If you opened this inside the Claude app or a file preview, open the file in Chrome instead. Otherwise Binance is blocked on this network: try mobile data or a different Wi-Fi, then press Refresh now.");
+    } finally { $("refresh").disabled = false; }
   }
 
   function renderLiq(L, price) {
@@ -544,6 +612,7 @@ input { font-family: var(--font-data); font-size: 15px; color: var(--fg); backgr
   }
 
   async function refreshNow() {
+    if (mode === "binance") return fetchBinance();
     if (!mcp) return;
     $("refresh").disabled = true;
     setStatus("stale", "Refreshing…");
@@ -568,11 +637,13 @@ input { font-family: var(--font-data); font-size: 15px; color: var(--fg); backgr
   (async () => {
     mcp = window.claude && window.claude.use ? await window.claude.use("mcp") : null;
     if (!mcp) {
-      setStatus("", "No live data here");
-      showMsg("Live data only works when this page is opened in claude.ai with the Crypto.com connector added.");
-      $("refresh").disabled = true;
+      mode = "binance";
+      $("src").textContent = "Binance spot + futures · hourly";
+      fetchBinance();
+      setInterval(fetchBinance, HOUR);
       return;
     }
+    $("src").textContent = "Crypto.com spot · hourly";
     for (const w of WATCHES) {
       mcp.watchTool(SERVER, w.tool, w.input, ev => onEvent(w.key, ev), { cache: { staleTime: 60000 }, refetchInterval: HOUR });
     }
