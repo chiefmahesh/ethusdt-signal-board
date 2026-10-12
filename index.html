@@ -1,7 +1,7 @@
 <!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>ETHUSDT Signal Board</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=optional">
 <style>
 /* Layout: phone = one column (verdict, liquidity, matrix, inputs); tablet = liquidity sides pair up; desktop ≥1024px = two columns, verdict + liquidity left, matrix + inputs right. */
 :root {
@@ -26,7 +26,10 @@ header { display: flex; flex-wrap: wrap; align-items: center; justify-content: s
 h1 { margin: 0; font-family: var(--font-data); font-size: clamp(19px, 4.5vw, 24px); font-weight: 600; letter-spacing: 0.02em; text-wrap: balance; }
 h1 small { font-family: var(--font-body); font-size: 13px; font-weight: 400; color: var(--muted); letter-spacing: 0; margin-left: 8px; white-space: nowrap; }
 .meta { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; display: flex; gap: 8px 12px; flex-wrap: wrap; align-items: center; }
-@media (max-width: 600px) { header { align-items: stretch; } .meta { width: 100%; } .meta #refresh { margin-left: auto; } }
+.stat { display: flex; flex-wrap: wrap; gap: 2px 12px; }
+.stat > span { white-space: nowrap; }
+#next { min-width: 9.5em; }
+@media (max-width: 600px) { header { align-items: stretch; } .meta { width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; } .stat { flex-direction: column; } }
 .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); display: inline-block; margin-right: 6px; vertical-align: 1px; }
 .dot.live { background: var(--long); }
 .dot.stale { background: var(--accent); }
@@ -41,6 +44,9 @@ button:disabled { opacity: 0.55; cursor: progress; }
 .line .k { color: var(--muted); }
 .line .v { min-width: 0; overflow-wrap: anywhere; }
 .line .v b { font-weight: 600; }
+#vSupport { min-height: 3em; }
+#vRes { min-height: 4.5em; }
+@media (min-width: 520px) { #vSupport { min-height: 1.5em; } #vRes { min-height: 3em; } }
 .line .v em { font-style: normal; color: var(--muted); font-family: var(--font-body); font-size: 13px; }
 .price { font-size: clamp(26px, 7vw, 34px); font-weight: 600; line-height: 1.1; }
 .bar { display: flex; height: 34px; border-radius: 6px; overflow: hidden; font-family: var(--font-data); font-weight: 600; font-size: 14px; }
@@ -69,7 +75,7 @@ td.val { min-width: 12em; overflow-wrap: anywhere; }
   .ledger td.n { grid-area: n; }
   .ledger td:nth-child(2) { grid-area: name; font-weight: 600; }
   .ledger td.tf { display: none; }
-  .ledger td.val { grid-area: val; min-width: 0; color: var(--muted); font-size: 13px; }
+  .ledger td.val { grid-area: val; min-width: 0; color: var(--muted); font-size: 13px; min-height: 3em; }
   .ledger td.imp { grid-area: imp; }
   .ledger td[colspan] { grid-column: 1 / -1; color: var(--muted); }
 }
@@ -90,7 +96,7 @@ td.imp { font-family: var(--font-data); font-weight: 600; white-space: nowrap; t
 .side li:first-child { font-size: 17px; font-weight: 600; }
 .side li .d { color: var(--muted); font-weight: 400; font-size: 13px; }
 .side li .eq { font-family: var(--font-body); font-size: 11px; color: var(--accent); border: 1px solid var(--accent); border-radius: 999px; padding: 0 6px; margin-left: 6px; font-weight: 500; }
-.wall { font-size: 12px; color: var(--muted); border-top: 1px dashed var(--line); padding-top: 8px; font-variant-numeric: tabular-nums; }
+.wall { min-height: 4.5em; font-size: 12px; color: var(--muted); border-top: 1px dashed var(--line); padding-top: 8px; font-variant-numeric: tabular-nums; }
 .manual { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 12px; }
 .field { display: grid; gap: 4px; font-size: 13px; }
 .field span { color: var(--muted); }
@@ -101,7 +107,8 @@ input { font-family: var(--font-data); font-size: 15px; color: var(--fg); backgr
 @media (max-width: 400px) { .line { grid-template-columns: 1fr; gap: 0; } .bar { font-size: 12px; } .bar div { padding-inline: 8px; } }
 @media (prefers-reduced-motion: reduce) { .bar div { transition: none; } }
 /* ---- Refresh animation ---- */
-#refresh { position: relative; overflow: hidden; display: inline-flex; align-items: center; gap: 8px; }
+#refresh { position: relative; overflow: hidden; display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 10.6em; flex: none; white-space: nowrap; }
+#refresh .lbl { white-space: nowrap; }
 #refresh .ico { width: 16px; height: 16px; flex: none; transition: transform 0.3s ease; }
 #refresh:hover:not(:disabled) .ico { transform: rotate(-45deg); }
 #refresh.busy { cursor: progress; border-color: var(--accent); color: var(--accent); }
@@ -120,7 +127,7 @@ input { font-family: var(--font-data); font-size: 15px; color: var(--fg); backgr
 .price.down { animation: flashDown 1.2s ease; }
 @keyframes flashUp { 0% { color: var(--long); text-shadow: 0 0 18px var(--long); } 100% { color: var(--fg); text-shadow: none; } }
 @keyframes flashDown { 0% { color: var(--short); text-shadow: 0 0 18px var(--short); } 100% { color: var(--fg); text-shadow: none; } }
-.delta { display: inline-block; white-space: nowrap; font-size: 13px; font-weight: 600; margin-left: 10px; font-family: var(--font-data); opacity: 0; transition: opacity 0.4s ease; vertical-align: middle; }
+.delta { display: block; height: 18px; line-height: 18px; white-space: nowrap; font-size: 13px; font-weight: 600; font-family: var(--font-data); opacity: 0; transition: opacity 0.4s ease; vertical-align: middle; }
 .delta.show { opacity: 1; }
 .delta.up { color: var(--long); } .delta.down { color: var(--short); }
 .ledger tr.changed td { animation: rowGlow 1.8s ease; }
@@ -137,8 +144,8 @@ input { font-family: var(--font-data); font-size: 15px; color: var(--fg); backgr
   <header>
     <h1>ETHUSDT <small id="src">connecting · hourly</small></h1>
     <div class="meta">
-      <span id="status"><span class="dot" id="dot"></span><span id="statusText">Connecting to Crypto.com…</span></span>
-      <span id="next"></span>
+      <div class="stat"><span id="status"><span class="dot" id="dot"></span><span id="statusText">Connecting…</span></span>
+      <span id="next">&nbsp;</span></div>
       <button id="refresh" type="button"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg><span class="lbl" id="refreshLbl">Refresh now</span></button>
     </div>
   </header>
@@ -170,16 +177,16 @@ input { font-family: var(--font-data); font-size: 15px; color: var(--fg); backgr
     <div class="liq">
       <div class="side up">
         <div class="side-h">Above · buy-side <span>stops of shorts, breakout buys</span></div>
-        <ol id="liqAbove"><li class="empty">Waiting for candles</li></ol>
+        <ol id="liqAbove"><li class="empty">—</li><li class="empty">—</li><li class="empty">—</li></ol>
         <div class="wall" id="wallAsk"></div>
       </div>
       <div class="side down">
         <div class="side-h">Below · sell-side <span>stops of longs, breakdown sells</span></div>
-        <ol id="liqBelow"><li class="empty">Waiting for candles</li></ol>
+        <ol id="liqBelow"><li class="empty">—</li><li class="empty">—</li><li class="empty">—</li></ol>
         <div class="wall" id="wallBid"></div>
       </div>
     </div>
-    <p class="note" id="magnet" style="margin-top:8px"></p>
+    <p class="note" id="magnet" style="margin-top:8px; min-height: 4.5em"></p>
   </section>
   </div>
   <div class="col b">
@@ -189,7 +196,7 @@ input { font-family: var(--font-data); font-size: 15px; color: var(--fg); backgr
     <div class="ledger">
       <table>
         <thead><tr><th>#</th><th>Indicator</th><th>TF</th><th>Live value</th><th style="text-align:right">Impact</th></tr></thead>
-        <tbody id="rows"><tr><td colspan="5" class="empty">Indicators fill in after the first data pull. Starting point is 50 / 50; each signal moves it by 5 points.</td></tr></tbody>
+        <tbody id="rows"><tr><td class="n">1</td><td>BTC trend</td><td class="tf">1D</td><td class="val empty">Loading…</td><td class="imp"><span class="chip N">–</span></td></tr><tr><td class="n">2</td><td>Structure & liquidity</td><td class="tf">4H</td><td class="val empty">Loading…</td><td class="imp"><span class="chip N">–</span></td></tr><tr><td class="n">3</td><td>ATR (14) volatility</td><td class="tf">1D</td><td class="val empty">Loading…</td><td class="imp"><span class="chip N">–</span></td></tr><tr><td class="n">4</td><td>Funding rate</td><td class="tf">8H</td><td class="val empty">Loading…</td><td class="imp"><span class="chip N">–</span></td></tr><tr><td class="n">5</td><td>Long/short ratio</td><td class="tf">8H</td><td class="val empty">Loading…</td><td class="imp"><span class="chip N">–</span></td></tr><tr><td class="n">6</td><td>EMA stack</td><td class="tf">4H</td><td class="val empty">Loading…</td><td class="imp"><span class="chip N">–</span></td></tr><tr><td class="n">7</td><td>RSI momentum</td><td class="tf">4H</td><td class="val empty">Loading…</td><td class="imp"><span class="chip N">–</span></td></tr><tr><td class="n">8</td><td>Taker flow (CVD proxy)</td><td class="tf">Live</td><td class="val empty">Loading…</td><td class="imp"><span class="chip N">–</span></td></tr><tr><td class="n">9</td><td>Volume</td><td class="tf">4H</td><td class="val empty">Loading…</td><td class="imp"><span class="chip N">–</span></td></tr></tbody>
       </table>
     </div>
   </section>
