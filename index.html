@@ -535,10 +535,13 @@ input { font-family: var(--font-data); font-size: 15px; color: var(--fg); backgr
     const pick = (pl, f) => { const x = pl && (pl.data && !Array.isArray(pl.data) ? pl.data : Array.isArray(pl && pl.data) ? pl.data[0] : pl); return x ? +x[f] : NaN; };
     const mark = pick(feeds.mark, "price"), index = pick(feeds.index, "price"), oiRaw = pick(feeds.perp, "open_interest");
     const premium = isFinite(mark) && isFinite(index) && index > 0 ? (mark - index) / index * 100 : null;
-    run({ price, eth4h, eth1d, btc1d, trades, premium, oi: isFinite(oiRaw) ? oiRaw : null, book: feeds.book ? E.bookFrom(feeds.book) : null });
+    const chgFrac = pick(feeds.ticker, "change");
+    const chg = isFinite(chgFrac) ? { pct: chgFrac * 100, abs: price - price / (1 + chgFrac) } : null;
+    run({ price, chg, eth4h, eth1d, btc1d, trades, premium, oi: isFinite(oiRaw) ? oiRaw : null, book: feeds.book ? E.bookFrom(feeds.book) : null });
   }
 
   function run(d) {
+    chg24 = d.chg || null;
     const mf = numOrNull($("funding").value), ml = numOrNull($("lsLong").value);
     const funding = mf != null ? mf : (d.funding != null ? d.funding : null);
     const lsLong = ml != null ? ml : (d.lsLong != null ? d.lsLong : null);
@@ -571,7 +574,7 @@ input { font-family: var(--font-data); font-size: 15px; color: var(--fg); backgr
       const H = await pickSpotHost();
       $("src").textContent = "Binance (" + H.replace("https://", "") + ") · hourly";
       const [tk, k4, kd, bd, tr, dp] = await Promise.all([
-        j(H + "/api/v3/ticker/price?symbol=ETHUSDT"),
+        j(H + "/api/v3/ticker/24hr?symbol=ETHUSDT"),
         j(H + "/api/v3/klines?symbol=ETHUSDT&interval=4h&limit=150"),
         j(H + "/api/v3/klines?symbol=ETHUSDT&interval=1d&limit=60"),
         j(H + "/api/v3/klines?symbol=BTCUSDT&interval=1d&limit=60"),
@@ -585,7 +588,7 @@ input { font-family: var(--font-data); font-size: 15px; color: var(--fg); backgr
       ]);
       const [pi, oi, ls] = fut.map(x => x.status === "fulfilled" ? x.value : null);
       bin = {
-        price: +tk.price, eth4h: kl(k4), eth1d: kl(kd), btc1d: kl(bd),
+        price: +tk.lastPrice, chg: { abs: +tk.priceChange, pct: +tk.priceChangePercent }, eth4h: kl(k4), eth1d: kl(kd), btc1d: kl(bd),
         trades: tr.map(t => ({ side: t.m ? "sell" : "buy", q: +t.q })),
         book: { asks: dp.asks.map(x => ({ p: +x[0], q: +x[1] })), bids: dp.bids.map(x => ({ p: +x[0], q: +x[1] })) },
         funding: pi ? +pi.lastFundingRate * 100 : null,
@@ -663,20 +666,32 @@ input { font-family: var(--font-data); font-size: 15px; color: var(--fg); backgr
     };
     requestAnimationFrame(step);
   }
-  function showDelta(from, to) {
-    const el = $("vPrice"), d = $("vDelta");
-    el.classList.remove("up", "down"); d.className = "delta";
+  // Green/red glow on the price when it moved since the last refresh
+  function flashPrice(from, to) {
+    const el = $("vPrice");
+    el.classList.remove("up", "down");
     if (from == null || from === to) return;
     void el.offsetWidth;
-    const up = to > from;
-    el.classList.add(up ? "up" : "down");
-    d.textContent = (up ? "▲ +" : "▼ ") + E.fmt(to - from);
-    d.classList.add(up ? "up" : "down", "show");
+    el.classList.add(to > from ? "up" : "down");
+  }
+  // 24h change tag under the price
+  let chg24 = null;
+  function chgText(c) {
+    const up = c.abs >= 0;
+    return (up ? "▲ +" : "▼ −") + E.fmt(Math.abs(c.abs)) + " (" + (up ? "+" : "−") + Math.abs(c.pct).toFixed(2) + "%)";
+  }
+  function show24h(c) {
+    const d = $("vDelta");
+    d.className = "delta";
+    if (!c || !isFinite(c.abs) || !isFinite(c.pct)) { d.textContent = ""; return; }
+    d.textContent = chgText(c) + " · 24h";
+    d.classList.add(c.abs >= 0 ? "up" : "down", "show");
   }
 
   function render(r) {
     $("vPrice").className = "price";
-    if (prevPrice !== r.price) { tweenPrice(prevPrice, r.price); showDelta(prevPrice, r.price); }
+    if (prevPrice !== r.price) { tweenPrice(prevPrice, r.price); flashPrice(prevPrice, r.price); }
+    show24h(chg24);
     prevPrice = r.price;
     const sweptTxt = r.sweptRecovered ? "downside liquidity swept on " + istDate(r.supportDate) : "8-day range low";
     $("vSupport").className = "v";
@@ -711,7 +726,7 @@ input { font-family: var(--font-data); font-size: 15px; color: var(--fg); backgr
     if (r.passedLvl) res += " (" + fmt$(r.passedLvl) + " passed, now first support on a retest)";
     let liq = "";
     if (lastLiq) liq = "\nLiquidity above: " + fmt$(lastLiq.above[0].price) + " (" + lastLiq.above[0].dist.toFixed(2) + "%)\nLiquidity below: " + fmt$(lastLiq.below[0].price) + " (" + lastLiq.below[0].dist.toFixed(2) + "%)";
-    return "Current value: " + fmt$(r.price) + "\nSupport: " + fmt$(r.support) + (r.sweptRecovered ? " (downside liquidity swept)" : "") + "\nResistance: " + res + liq + "\nLong: " + r.long + "%\nShort: " + r.short + "%";
+    return "Current value: " + fmt$(r.price) + (chg24 ? " (24h " + (chg24.abs >= 0 ? "+" : "−") + E.fmt(Math.abs(chg24.abs)) + ", " + (chg24.abs >= 0 ? "+" : "−") + Math.abs(chg24.pct).toFixed(2) + "%)" : "") + "\nSupport: " + fmt$(r.support) + (r.sweptRecovered ? " (downside liquidity swept)" : "") + "\nResistance: " + res + liq + "\nLong: " + r.long + "%\nShort: " + r.short + "%";
   }
 
   function tickClock() {

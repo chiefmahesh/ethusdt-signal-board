@@ -35,7 +35,7 @@ A single-page, live dashboard that turns ETH/USDT market data into a plain tradi
 The top card gives the answer in the same five lines every time:
 
 ```
-Current value: $2,554.62
+Current value: $2,554.62 (24h +45.42, +1.81%)
 Support: $2,406.84 (downside liquidity swept)
 Resistance: $2,587.33 ($2,519.68 passed, now first support on a retest)
 Long: 55%
@@ -46,6 +46,7 @@ Below it:
 
 | Section | What you get |
 |---|---|
+| **24h change** | Under the price: the change over the last 24 hours in dollars and percent, e.g. ▲ +45.42 (+1.81%) · 24h, green when up and red when down |
 | **Long / Short bar** | The bias as a split bar, plus a one-line summary ("Long-favoured. 2 signals lean long, 1 leans short, 6 neutral.") |
 | **Nearest liquidity** | The three closest liquidity pools above price (buy-side) and below price (sell-side), each with its distance in %, plus the biggest order-book wall on each side |
 | **9-indicator matrix** | Every indicator's live value and whether it adds Long +5, Short +5 or stays neutral |
@@ -58,8 +59,8 @@ The page picks its source automatically, based on where it is opened:
 
 | Opened in | Source | What it pulls |
 |---|---|---|
-| **claude.ai** (as a published artifact) | Crypto.com connector | ETH_USDT ticker, 4H and 1D candles (50 each), BTC_USDT 1D candles, last 150 trades, order book (50 levels), ETH perpetual mark price, ETH index price, perpetual open interest |
-| **A browser** (local file or any web host) | Binance public API, no key needed | ETHUSDT price, 4H candles (150), 1D candles (60), BTCUSDT 1D candles, last 500 aggregated trades, order book (1,000 levels), and from Binance Futures: funding rate, mark/index price, open interest, global long/short account ratio |
+| **claude.ai** (as a published artifact) | Crypto.com connector | ETH_USDT ticker (price and 24h change), 4H and 1D candles (50 each), BTC_USDT 1D candles, last 150 trades, order book (50 levels), ETH perpetual mark price, ETH index price, perpetual open interest |
+| **A browser** (local file or any web host) | Binance public API, no key needed | ETHUSDT 24h ticker (price and 24h change), 4H candles (150), 1D candles (60), BTCUSDT 1D candles, last 500 aggregated trades, order book (1,000 levels), and from Binance Futures: funding rate, mark/index price, open interest, global long/short account ratio |
 
 The header shows which source is active, for example `Crypto.com spot · hourly` or `Binance (data-api.binance.vision) · hourly`.
 
@@ -145,7 +146,7 @@ Leave a box blank to use the live value. Typed values are saved in that browser 
 
 - **Responsive.** Phone: one column, and the indicator table turns into cards. Tablet: the two liquidity panels sit side by side. Desktop (1024px and wider): two columns, with the verdict and liquidity on the left (kept in view while scrolling) and the matrix and inputs on the right.
 - **Light and dark themes** follow the device setting.
-- **Refresh animation.** The icon spins and a progress line sweeps the button. Values dim while loading. When data arrives, the price counts to its new value with a green or red glow and a ▲ / ▼ change tag, changed indicators flash, and the button shows **Updated** (or **Failed**, with a shake).
+- **Refresh animation.** The icon spins and a progress line sweeps the button. Values dim while loading. When data arrives, the price counts to its new value with a green or red glow showing which way it moved since the last refresh, changed indicators flash, and the button shows **Updated** (or **Failed**, with a shake).
 - **No layout jumping.** Placeholders reserve the space real values will take, and the refresh button has a fixed width, so nothing moves during load or refresh.
 - **Reduced motion.** With the device's "reduce motion" setting on, animations are switched off.
 
