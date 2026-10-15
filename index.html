@@ -225,12 +225,14 @@ input { font-family: var(--font-data); font-size: 15px; color: var(--fg); backgr
 .dec.wait .dec-w { color: var(--warn); }
 .dec-s { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
 @media (max-width: 379px) { .dec-top { flex-wrap: wrap; } .dec { justify-items: start; text-align: left; } }
-.dec-why { margin: 0; font-size: 14px; min-height: 4.5em; }
+.dec-why { margin: 0; font-size: 14px; }
+.dec-why.pending { min-height: 4.5em; }
 .dec-why b { font-weight: 600; }
-.ladder { display: grid; gap: 4px; min-height: 314px; align-content: start; }
+.ladder { display: grid; gap: 4px; align-content: start; }
+.ladder.pending { min-height: 314px; }   /* reserved only until the first data arrives */
 .lad { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "k d" "v x"; column-gap: 10px; row-gap: 1px; align-items: baseline; padding: 6px 10px; border-radius: 8px; border-left: 3px solid var(--line); background: var(--panel-2); min-width: 0; }
 .lad .k { grid-area: k; } .lad .v { grid-area: v; } .lad .d { grid-area: d; text-align: right; } .lad .x { grid-area: x; text-align: right; }
-@media (max-width: 559px) { .lad { grid-template-areas: "k d" "v v" "x x"; } .lad .x { text-align: left; } .lad.now .x { display: none; } .ladder { min-height: 370px; } }
+@media (max-width: 559px) { .lad { grid-template-areas: "k d" "v v" "x x"; } .lad .x { text-align: left; } .lad.now .x { display: none; } .ladder.pending { min-height: 370px; } }
 .lad.res { border-left-color: var(--short); } .lad.sup { border-left-color: var(--long); }
 .lad.piv, .lad.low { border-left-color: var(--muted); }
 .lad.now { border-left-color: var(--accent); background: transparent; border: 1px dashed var(--line); border-left: 3px solid var(--accent); }
@@ -239,7 +241,8 @@ input { font-family: var(--font-data); font-size: 15px; color: var(--fg); backgr
 .lad.res .d { color: var(--short); } .lad.sup .d { color: var(--long); }
 .drv { display: grid; gap: 6px; }
 .drv .k { font-size: 12px; color: var(--muted); }
-.drv-c { display: flex; flex-wrap: wrap; gap: 6px; min-height: 54px; align-content: flex-start; }
+.drv-c { display: flex; flex-wrap: wrap; gap: 6px; align-content: flex-start; }
+.drv-c.pending { min-height: 54px; }
 .dchip { font-size: 12px; font-weight: 500; padding: 3px 10px; border-radius: 999px; white-space: nowrap; }
 .dchip.l { background: var(--long-soft); color: var(--long); }
 .dchip.s { background: var(--short-soft); color: var(--short); }
@@ -298,17 +301,17 @@ input { font-family: var(--font-data); font-size: 15px; color: var(--fg); backgr
       <div class="px"><span class="k">ETH price</span><span class="price empty" id="vPrice">Loading…</span><span class="delta" id="vDelta"></span></div>
       <div class="dec" id="dec"><span class="dec-w" id="decW">…</span><span class="dec-s" id="decS">Reading the market</span></div>
     </div>
-    <p class="dec-why" id="decWhy">The call appears once the market data has loaded.</p>
+    <p class="dec-why pending" id="decWhy">The call appears once the market data has loaded.</p>
     <div class="bar" role="img" id="bar" aria-label="Long versus short bias">
       <div class="L" id="barL" style="flex-basis:50%">LONG</div>
       <div class="S" id="barS" style="flex-basis:50%">SHORT</div>
     </div>
-    <div class="ladder" id="ladder" aria-label="Key price levels">
+    <div class="ladder pending" id="ladder" aria-label="Key price levels">
       <div class="lad res"><i class="k">Resistance · sell zone</i><b class="d">–</b><b class="v">–</b><i class="x">&nbsp;</i></div>
       <div class="lad now"><i class="k">Price now</i><b class="d">–</b><b class="v">–</b><i class="x">&nbsp;</i></div>
       <div class="lad sup"><i class="k">Support · buy zone</i><b class="d">–</b><b class="v">–</b><i class="x">&nbsp;</i></div>
     </div>
-    <div class="drv"><span class="k">Driving the bias</span><div class="drv-c" id="drv"><span class="dchip n">Waiting for data</span></div></div>
+    <div class="drv"><span class="k">Driving the bias</span><div class="drv-c pending" id="drv"><span class="dchip n">Waiting for data</span></div></div>
     <div class="foot">
       <span class="bias" id="bias">&nbsp;</span>
       <span class="actions"><button id="copy" type="button" disabled>Copy summary</button><span class="bias" id="copyNote"></span></span>
@@ -1328,7 +1331,7 @@ input { font-family: var(--font-data); font-size: 15px; color: var(--fg); backgr
     if (r.support < R.bottom.lo)
       rows.push({ cls: "low", p: r.support, k: "Range low", v: fmt$(r.support), d: pct(r.support), x: r.sweptRecovered ? "swept " + istDate(r.supportDate) + ", recovered" : "8-day low" });
     rows.sort((a, b) => b.p - a.p);
-    const lad = $("ladder"); lad.textContent = "";
+    const lad = $("ladder"); lad.textContent = ""; lad.classList.remove("pending");
     for (const row of rows) {
       const el = document.createElement("div"); el.className = "lad " + row.cls;
       const mk = (tag, c, t) => { const e = document.createElement(tag); e.className = c; e.textContent = t; return e; };
@@ -1337,7 +1340,7 @@ input { font-family: var(--font-data); font-size: 15px; color: var(--fg); backgr
     }
 
     // drivers: every signal that is pushing the score, long first
-    const drv = $("drv"); drv.textContent = "";
+    const drv = $("drv"); drv.textContent = ""; drv.classList.remove("pending"); $("decWhy").classList.remove("pending");
     const pushing = r.rows.filter(x => x.impact !== 0).sort((a, b) => b.impact - a.impact);
     if (!pushing.length) { const c = document.createElement("span"); c.className = "dchip n"; c.textContent = "No signal is pushing either way"; drv.appendChild(c); }
     for (const x of pushing) {
