@@ -195,7 +195,7 @@ input { font-family: var(--font-data); font-size: 15px; color: var(--fg); backgr
 /* ---- Track record ---- */
 .track { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: clamp(12px, 3vw, 18px); display: grid; gap: 10px; }
 .trk-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
-@media (min-width: 560px) { .trk-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; } }
+@media (min-width: 560px) { .trk-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; } .trk-k { min-height: 3em; } }
 @media (max-width: 559px) { .trk { grid-template-columns: minmax(0, 1fr) auto; column-gap: 12px; } .trk b { grid-row: 1 / span 2; grid-column: 2; align-self: center; } .trk .meter { grid-column: 1 / -1; } .trk-s { min-height: 0; } }
 .trk { background: var(--panel-2); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 10px 12px; display: grid; gap: 4px; align-content: start; min-width: 0; }
 .trk-k { font-size: 12px; color: var(--muted); }
@@ -204,6 +204,38 @@ input { font-family: var(--font-data); font-size: 15px; color: var(--fg); backgr
 .trk .meter i { background: var(--accent); }
 #trkNote { min-height: 6em; }
 @media (min-width: 560px) { #trkNote { min-height: 3.2em; } }
+
+/* ---- Decision card ---- */
+.dec-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.px { display: grid; gap: 2px; min-width: 0; }
+.px .k { font-size: 12px; color: var(--muted); letter-spacing: 0.04em; }
+.dec { display: grid; justify-items: end; gap: 2px; text-align: right; }
+.dec-w { font-family: var(--font-data); font-size: clamp(17px, 5vw, 28px); font-weight: 700; letter-spacing: 0.04em; line-height: 1.1; padding: 4px 12px; border-radius: 8px; background: var(--panel-2); color: var(--fg); border: 1px solid var(--line); white-space: nowrap; }
+.dec.long .dec-w { color: var(--long); background: var(--long-soft); border-color: transparent; }
+.dec.short .dec-w { color: var(--short); background: var(--short-soft); border-color: transparent; }
+.dec.wait .dec-w { color: var(--warn); }
+.dec-s { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+@media (max-width: 379px) { .dec-top { flex-wrap: wrap; } .dec { justify-items: start; text-align: left; } }
+.dec-why { margin: 0; font-size: 14px; min-height: 4.5em; }
+.dec-why b { font-weight: 600; }
+.ladder { display: grid; gap: 4px; min-height: 314px; align-content: start; }
+.lad { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "k d" "v x"; column-gap: 10px; row-gap: 1px; align-items: baseline; padding: 6px 10px; border-radius: 8px; border-left: 3px solid var(--line); background: var(--panel-2); min-width: 0; }
+.lad .k { grid-area: k; } .lad .v { grid-area: v; } .lad .d { grid-area: d; text-align: right; } .lad .x { grid-area: x; text-align: right; }
+@media (max-width: 559px) { .lad { grid-template-areas: "k d" "v v" "x x"; } .lad .x { text-align: left; } .lad.now .x { display: none; } .ladder { min-height: 370px; } }
+.lad.res { border-left-color: var(--short); } .lad.sup { border-left-color: var(--long); }
+.lad.piv, .lad.low { border-left-color: var(--muted); }
+.lad.now { border-left-color: var(--accent); background: transparent; border: 1px dashed var(--line); border-left: 3px solid var(--accent); }
+.lad i { font-style: normal; font-size: 12px; color: var(--muted); }
+.lad b { font-family: var(--font-data); font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.lad.res .d { color: var(--short); } .lad.sup .d { color: var(--long); }
+.drv { display: grid; gap: 6px; }
+.drv .k { font-size: 12px; color: var(--muted); }
+.drv-c { display: flex; flex-wrap: wrap; gap: 6px; min-height: 54px; align-content: flex-start; }
+.dchip { font-size: 12px; font-weight: 500; padding: 3px 10px; border-radius: 999px; white-space: nowrap; }
+.dchip.l { background: var(--long-soft); color: var(--long); }
+.dchip.s { background: var(--short-soft); color: var(--short); }
+.dchip.n { color: var(--muted); border: 1px solid var(--line); }
+.revbox { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: clamp(12px, 3vw, 18px); }
 /* ---- Refresh animation ---- */
 #refresh { position: relative; overflow: hidden; display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 10.6em; flex: none; white-space: nowrap; }
 #refresh .lbl { white-space: nowrap; }
@@ -253,43 +285,23 @@ input { font-family: var(--font-data); font-size: 15px; color: var(--fg); backgr
   <div class="main">
   <div class="col a">
   <section class="verdict" aria-live="polite">
-    <div class="lines" id="lines">
-      <div class="line"><span class="k">Current value</span><span class="v"><span class="price empty" id="vPrice">Loading…</span><span class="delta" id="vDelta"></span></span></div>
-      <div class="line"><span class="k">Support</span><span class="v empty" id="vSupport">Waiting for 4H candles</span></div>
-      <div class="line"><span class="k">Resistance</span><span class="v empty" id="vRes">Waiting for 4H candles</span></div>
+    <div class="dec-top">
+      <div class="px"><span class="k">ETH price</span><span class="price empty" id="vPrice">Loading…</span><span class="delta" id="vDelta"></span></div>
+      <div class="dec" id="dec"><span class="dec-w" id="decW">…</span><span class="dec-s" id="decS">Reading the market</span></div>
     </div>
+    <p class="dec-why" id="decWhy">The call appears once the market data has loaded.</p>
     <div class="bar" role="img" id="bar" aria-label="Long versus short bias">
       <div class="L" id="barL" style="flex-basis:50%">LONG</div>
       <div class="S" id="barS" style="flex-basis:50%">SHORT</div>
     </div>
-    <div class="rev" id="rev">
-      <div class="rev-h"><b>Reversal watch</b></div>
-      <div class="first">
-        <div class="first-k">Reaches first</div>
-        <div class="first-l"><span><b>↑</b> <b id="fUpV">–</b> · <b id="fUpT">–</b></span><span><b id="fDnT">–</b> · <b id="fDnV">–</b> <b>↓</b></span></div>
-        <div class="fbar" role="img" id="fbar" aria-label="Which zone price is likely to reach first"><i class="u" id="fUp"></i><i class="d" id="fDn"></i></div>
-      </div>
-      <div class="rev-grid">
-      <div class="rz top">
-        <div class="rz-t"><span>Above · may turn down</span><b id="revTopP">–</b></div>
-        <div class="meter"><i id="revTopM"></i></div>
-        <div class="rz-s" id="revTopS">–</div>
-        <div class="rz-z" id="revTopZ">Zone —</div>
-        <div class="rz-d" id="revTopD">Target and cancel level appear after the first data pull.</div>
-        <details class="why"><summary>Why</summary><ul id="revTopW"></ul></details>
-      </div>
-      <div class="rz bot">
-        <div class="rz-t"><span>Below · may turn up</span><b id="revBotP">–</b></div>
-        <div class="meter"><i id="revBotM"></i></div>
-        <div class="rz-s" id="revBotS">–</div>
-        <div class="rz-z" id="revBotZ">Zone —</div>
-        <div class="rz-d" id="revBotD">Target and cancel level appear after the first data pull.</div>
-        <details class="why"><summary>Why</summary><ul id="revBotW"></ul></details>
-      </div>
-      </div>
+    <div class="ladder" id="ladder" aria-label="Key price levels">
+      <div class="lad res"><i class="k">Resistance · sell zone</i><b class="d">–</b><b class="v">–</b><i class="x">&nbsp;</i></div>
+      <div class="lad now"><i class="k">Price now</i><b class="d">–</b><b class="v">–</b><i class="x">&nbsp;</i></div>
+      <div class="lad sup"><i class="k">Support · buy zone</i><b class="d">–</b><b class="v">–</b><i class="x">&nbsp;</i></div>
     </div>
+    <div class="drv"><span class="k">Driving the bias</span><div class="drv-c" id="drv"><span class="dchip n">Waiting for data</span></div></div>
     <div class="foot">
-      <span class="bias" id="bias">The bias appears once the market data has loaded.</span>
+      <span class="bias" id="bias">&nbsp;</span>
       <span class="actions"><button id="copy" type="button" disabled>Copy summary</button><span class="bias" id="copyNote"></span></span>
     </div>
   </section>
@@ -337,6 +349,37 @@ input { font-family: var(--font-data); font-size: 15px; color: var(--fg); backgr
 
   </div>
   <div class="col b">
+
+  <section>
+    <h2>Reversal watch</h2>
+    <div class="revbox">
+    <div class="rev" id="rev">
+      <div class="first">
+        <div class="first-k">Reaches first</div>
+        <div class="first-l"><span><b>↑</b> <b id="fUpV">–</b> · <b id="fUpT">–</b></span><span><b id="fDnT">–</b> · <b id="fDnV">–</b> <b>↓</b></span></div>
+        <div class="fbar" role="img" id="fbar" aria-label="Which zone price is likely to reach first"><i class="u" id="fUp"></i><i class="d" id="fDn"></i></div>
+      </div>
+      <div class="rev-grid">
+      <div class="rz top">
+        <div class="rz-t"><span>Above · may turn down</span><b id="revTopP">–</b></div>
+        <div class="meter"><i id="revTopM"></i></div>
+        <div class="rz-s" id="revTopS">–</div>
+        <div class="rz-z" id="revTopZ">Zone —</div>
+        <div class="rz-d" id="revTopD">Target and cancel level appear after the first data pull.</div>
+        <details class="why"><summary>Why</summary><ul id="revTopW"></ul></details>
+      </div>
+      <div class="rz bot">
+        <div class="rz-t"><span>Below · may turn up</span><b id="revBotP">–</b></div>
+        <div class="meter"><i id="revBotM"></i></div>
+        <div class="rz-s" id="revBotS">–</div>
+        <div class="rz-z" id="revBotZ">Zone —</div>
+        <div class="rz-d" id="revBotD">Target and cancel level appear after the first data pull.</div>
+        <details class="why"><summary>Why</summary><ul id="revBotW"></ul></details>
+      </div>
+      </div>
+    </div>
+    </div>
+  </section>
 
   <section>
     <h2>Nearest liquidity</h2>
@@ -615,19 +658,22 @@ input { font-family: var(--font-data); font-size: 15px; color: var(--fg); backgr
     if (!P) return;
     const chip = $("planChip");
     if (P.noTrade) {
-      chip.className = "vchip notrade"; chip.textContent = "No clear setup";
+      chip.className = "vchip notrade";
+      const top = Math.max(P.short.prob, P.long.prob);
+      chip.textContent = "No clear setup · best " + (P.best ? P.best.prob : top) + "%";
       $("planV").innerHTML = P.best
         ? "<b>No clear setup.</b> The best option is a weak " + P.best.dir + " from " + fmt$(P.best.entry) + " (" + P.best.prob + "% reversal chance). Waiting, or a smaller size, is reasonable."
         : "<b>No clear setup.</b> Neither zone has a reversal chance clearly above 50% with enough reward for the risk. Waiting is a valid decision.";
       if (P.flat) $("planV").innerHTML += " The overall bias is near 50/50 (" + P.bias + "% Long).";
       if (P.eventDay) $("planV").innerHTML += " News day is on.";
     } else {
-      chip.className = "vchip take"; chip.textContent = "Setup: " + (P.best.dir === "long" ? "Long" : "Short");
+      chip.className = "vchip take"; chip.textContent = "Setup: " + (P.best.dir === "long" ? "Long" : "Short") + " · " + P.best.prob + "%";
       $("planV").innerHTML = "<b>" + (P.best.dir === "long" ? "Long" : "Short") + " from " + fmt$(P.best.entry) + "</b>, stop " + fmt$(P.best.stop) + ". " + (P.best.status.k === "now" ? "Price is in the zone now." : "Wait for price to reach the entry; don't chase it.");
     }
     for (const k of ["short", "long"]) {
       const x = P[k];
-      const v = $("pl" + k + "V"); v.className = "vchip " + x.verdict; v.textContent = VTXT[x.verdict];
+      const v = $("pl" + k + "V"); v.className = "vchip " + x.verdict; v.textContent = VTXT[x.verdict] + " · " + x.prob + "%";
+      v.title = x.prob + "% reversal chance";
       $("pl" + k + "E").textContent = fmt$(x.entry);
       const dd = (id, main, sub) => { const el = $(id); el.textContent = main + " "; if (sub !== undefined) { const em = document.createElement("em"); em.textContent = sub || "\u00a0"; el.appendChild(em); } };
       const usd = v => "$" + Math.round(v).toLocaleString("en-US");
@@ -642,13 +688,14 @@ input { font-family: var(--font-data); font-size: 15px; color: var(--fg); backgr
       const st = $("pl" + k + "St"); st.className = "ps-st " + x.status.k; st.textContent = x.status.txt + ".";
       $("pl" + k + "V").parentElement.parentElement.classList.toggle("dim", x.verdict === "skip" || x.status.k === "off");
     }
+    renderDecision();
   }
   function planText() {
     if (!lastPlan) return "";
     const P = lastPlan;
-    if (P.noTrade && !P.best) return "\nTrade plan: no clear setup";
+    if (P.noTrade && !P.best) return "\nTrade plan: no clear setup (best " + Math.max(P.short.prob, P.long.prob) + "%)";
     const b = P.best, t = b.targets.map(x => fmt$(x.price) + " (1 : " + x.rr.toFixed(1) + ")").join(", ");
-    return "\nTrade plan: " + (P.noTrade ? "no clear setup; best is a weak " : "") + b.dir + " from " + fmt$(b.entry) + ", stop " + fmt$(b.stop) + ", targets " + t + (b.size ? ", size " + b.size.qty.toFixed(3) + " ETH" : "");
+    return "\nTrade plan: " + (P.noTrade ? "no clear setup; best is a weak " : "") + b.dir + " (" + b.prob + "%) from " + fmt$(b.entry) + ", stop " + fmt$(b.stop) + ", targets " + t + (b.size ? ", size " + b.size.qty.toFixed(3) + " ETH" : "");
   }
 
 
@@ -762,6 +809,65 @@ input { font-family: var(--font-data); font-size: 15px; color: var(--fg); backgr
     return { minutes: Math.min(60, (Date.now() - liq.since) / 60000), longUsd, shortUsd };
   }
 
+
+  // ---- Decision card: one call, the price ladder, and what drives the bias ----
+  function renderDecision() {
+    const r = lastResult, P = lastPlan, R = lastRev;
+    if (!r || !P || !R) return;
+    const dec = $("dec");
+    let word, cls, sub, why;
+    const t1 = b => !b.targets.length ? "" : b.targets.length === 1
+      ? ", target " + fmt$(b.targets[0].price) + " (1 : " + b.targets[0].rr.toFixed(1) + ")"
+      : ", targets " + fmt$(b.targets[0].price) + " → " + fmt$(b.targets[1].price) + " (up to 1 : " + b.bestRR.toFixed(1) + ")";
+    if (!P.noTrade) {
+      const b = P.best;
+      word = b.dir === "long" ? "LONG" : "SHORT"; cls = b.dir; sub = "Take · " + b.prob + "% reversal chance";
+      why = "<b>" + (b.dir === "long" ? "Buy" : "Sell") + " at " + fmt$(b.entry) + "</b>, stop " + fmt$(b.stop) + t1(b) + ". " + (b.status.k === "now" ? "Price is in the zone now." : "Wait for price to reach the entry; don't chase it.");
+    } else if (r.long >= 60) {
+      word = "LEAN LONG"; cls = "long"; sub = "Bias " + r.long + "% · no entry yet";
+      why = "Signals favour longs, but no setup is clean enough to take. The better entry is the <b>support zone at " + fmt$(R.bottom.hi) + "</b>.";
+    } else if (r.long <= 40) {
+      word = "LEAN SHORT"; cls = "short"; sub = "Bias " + r.short + "% Short · no entry yet";
+      why = "Signals favour shorts, but no setup is clean enough to take. The better entry is the <b>resistance zone at " + fmt$(R.top.lo) + "</b>.";
+    } else {
+      word = "WAIT"; cls = "wait"; sub = "Bias " + r.long + "% Long · no clear edge";
+      why = "Signals are split and no setup is strong enough. Waiting is a valid decision." + (P.best ? " Closest: a weak " + P.best.dir + " from " + fmt$(P.best.entry) + " (" + P.best.prob + "%)." : "");
+    }
+    if (P.eventDay) sub += " · news day";
+    dec.className = "dec " + cls; $("decW").textContent = word; $("decS").textContent = sub; $("decWhy").innerHTML = why;
+
+    // price ladder, highest price first
+    const price = r.price, pct = v => (v >= price ? "+" : "−") + Math.abs((v - price) / price * 100).toFixed(2) + "%";
+    const rows = [
+      { cls: "res", p: R.top.lo, k: "Resistance · sell zone", v: fmt$(R.top.lo) + " – " + fmt$(R.top.hi), d: pct(R.top.lo), x: "reached first " + R.first.up + "% · turns down " + R.top.prob + "%" },
+      { cls: "now", p: price, k: "Price now", v: fmt$(price), d: chg24 ? (chg24.pct >= 0 ? "+" : "−") + Math.abs(chg24.pct).toFixed(2) + "% 24h" : "", x: " " },
+      { cls: "sup", p: R.bottom.hi, k: "Support · buy zone", v: fmt$(R.bottom.lo) + " – " + fmt$(R.bottom.hi), d: pct(R.bottom.hi), x: "reached first " + R.first.down + "% · turns up " + R.bottom.prob + "%" },
+    ];
+    const piv = r.passedLvl || r.nearSupport;
+    if (piv && piv < price && piv > R.bottom.hi && Math.abs(piv - R.bottom.hi) / price > 0.002)
+      rows.push({ cls: "piv", p: piv, k: "Pivot · old resistance", v: fmt$(piv), d: pct(piv), x: "support on a retest" });
+    if (r.support < R.bottom.lo)
+      rows.push({ cls: "low", p: r.support, k: "Range low", v: fmt$(r.support), d: pct(r.support), x: r.sweptRecovered ? "swept " + istDate(r.supportDate) + ", recovered" : "8-day low" });
+    rows.sort((a, b) => b.p - a.p);
+    const lad = $("ladder"); lad.textContent = "";
+    for (const row of rows) {
+      const el = document.createElement("div"); el.className = "lad " + row.cls;
+      const mk = (tag, c, t) => { const e = document.createElement(tag); e.className = c; e.textContent = t; return e; };
+      el.append(mk("i", "k", row.k), mk("b", "d", row.d || " "), mk("b", "v", row.v), mk("i", "x", row.x));
+      lad.appendChild(el);
+    }
+
+    // drivers: every signal that is pushing the score, long first
+    const drv = $("drv"); drv.textContent = "";
+    const pushing = r.rows.filter(x => x.impact !== 0).sort((a, b) => b.impact - a.impact);
+    if (!pushing.length) { const c = document.createElement("span"); c.className = "dchip n"; c.textContent = "No signal is pushing either way"; drv.appendChild(c); }
+    for (const x of pushing) {
+      const c = document.createElement("span"); c.className = "dchip " + (x.impact > 0 ? "l" : "s");
+      c.textContent = (x.impact > 0 ? "▲ " : "▼ ") + x.name.replace(/ \(.*\)$/, "");
+      c.title = x.value; drv.appendChild(c);
+    }
+  }
+
   function renderLiq(L, price) {
     const list = (el, arr) => {
       el.textContent = "";
@@ -849,17 +955,11 @@ input { font-family: var(--font-data); font-size: 15px; color: var(--fg); backgr
     if (prevPrice !== r.price) { tweenPrice(prevPrice, r.price); flashPrice(prevPrice, r.price); }
     show24h(chg24);
     prevPrice = r.price;
-    const sweptTxt = r.sweptRecovered ? "swept " + istDate(r.supportDate) + ", recovered" : "8-day low";
-    $("vSupport").className = "v";
-    $("vSupport").innerHTML = "<b>" + fmt$(r.support) + "</b> <em>· " + sweptTxt + "</em>";
-    $("vRes").className = "v";
-    let res = "<b>" + fmt$(r.resistance) + "</b> <em>· " + (r.resistanceNote.startsWith("nearest") ? "4H swing high" : "8-day high") + "</em>";
-    if (r.passedLvl) res += "<br><em>Passed " + fmt$(r.passedLvl) + ", now support on a retest</em>";
-    $("vRes").innerHTML = res;
+    // support / resistance now live in the price ladder (renderDecision)
     $("barL").style.flexBasis = r.long + "%"; $("barL").textContent = "LONG " + r.long + "%";
     $("barS").style.flexBasis = r.short + "%"; $("barS").textContent = r.short + "% SHORT";
     const lean = r.long > r.short ? "Long-favoured" : r.long < r.short ? "Short-favoured" : "No edge";
-    $("bias").innerHTML = "<b>" + lean + ".</b> " + r.rows.filter(x => x.impact > 0).length + " signals lean long, " + r.rows.filter(x => x.impact < 0).length + " lean short, " + r.rows.filter(x => x.impact === 0).length + " neutral.";
+    $("bias").textContent = r.rows.filter(x => x.impact > 0).length + " long · " + r.rows.filter(x => x.impact < 0).length + " short · " + r.rows.filter(x => x.impact === 0).length + " neutral";
     $("copy").disabled = false;
 
     const tb = $("rows"); tb.textContent = "";
