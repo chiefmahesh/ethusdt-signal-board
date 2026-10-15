@@ -10,7 +10,7 @@ A single-page, live dashboard that turns ETH/USDT market data into a plain tradi
   <img src="screenshots/mobile-light.png" alt="Signal Board on a phone, light theme" width="300">
 </p>
 
-> Screenshots show sample data captured on 12 Oct 2026. Live numbers will differ.
+> Screenshots show sample data captured on 15 Oct 2026 in browser mode (Binance), with a $5,000 account entered in the trade plan. Live numbers will differ.
 
 ---
 
@@ -35,7 +35,31 @@ A single-page, live dashboard that turns ETH/USDT market data into a plain tradi
 
 ## What it shows
 
-The top card gives the answer in the same five lines every time:
+The top card is a **decision card**. It answers one question, which way to trade right now, and leaves the detail to the cards below.
+
+<img src="screenshots/decision-card.png" alt="Decision card: price, the call, Long/Short bar, price ladder and the signals driving the bias" width="480">
+
+| Part | What it tells you |
+|---|---|
+| **Price and 24h change** | Current price, with the change over the last 24 hours, e.g. ▲ +45.42 (+1.81%) · 24h |
+| **The call** | One word: **LONG** or **SHORT** when a setup qualifies as Take, **LEAN LONG** or **LEAN SHORT** when the bias is 60%+ but no entry is clean yet, or **WAIT** when signals are split. A sentence under it gives the reason or the order: e.g. "Buy at $2,497.60, stop $2,472.82, targets $2,519.68 → $2,587.33 (up to 1 : 3.6). Wait for price to reach the entry." |
+| **Long / Short bar** | The bias from the 11 indicators |
+| **Price ladder** | Every level that matters on one map, highest first: resistance (sell) zone, current price, pivot, support (buy) zone and range low. Each shows its distance from price, and the two zones also show which one is likely reached first and the chance price turns there |
+| **Driving the bias** | Only the signals actually pushing the score, as green ▲ (long) and red ▼ (short) chips. Hover or long-press a chip for its live value |
+| **Copy summary** | Copies the classic five lines plus liquidity, reversal and trade-plan lines, ready to paste anywhere |
+
+Below it:
+
+| Section | What you get |
+|---|---|
+| **Trade plan** | Entry, stop, two targets, risk-to-reward, position size from your account and risk %, and a Take / Weak / Skip verdict for each reversal setup, plus an overall "No clear setup" flag |
+| **Reversal watch** | For the nearest zone above and below price: the chance price turns there if it gets there, which is reached first, the target if it turns, the 4H close that cancels the setup, and (under **Why**) the top three reasons |
+| **Nearest liquidity** | The three closest liquidity pools above price (buy-side) and below price (sell-side), each with its distance in %, plus the biggest order-book wall on each side |
+| **Indicator matrix** | All 11 indicators' live values and whether each adds Long +5, Short +5 or stays neutral |
+| **Manual inputs** | Optional boxes to override funding rate and the long/short account ratio |
+| **Track record** | How often past bias calls and setups were right, graded automatically from later candles |
+
+Copy summary keeps the original five-line format at the top:
 
 ```
 Current value: $2,554.62 (24h +45.42, +1.81%)
@@ -44,20 +68,6 @@ Resistance: $2,587.33 ($2,519.68 passed, now first support on a retest)
 Long: 55%
 Short: 45%
 ```
-
-Below it:
-
-| Section | What you get |
-|---|---|
-| **24h change** | Under the price: the change over the last 24 hours in dollars and percent, e.g. ▲ +45.42 (+1.81%) · 24h, green when up and red when down |
-| **Long / Short bar** | The bias as a split bar, plus a one-line summary ("Long-favoured. 2 signals lean long, 1 leans short, 6 neutral.") |
-| **Reversal watch** | Under the bar: for the nearest liquidity zone above and below price, the chance price turns there if it gets there, the zone itself, the target if it turns, the 4H close that cancels the setup, and (under **Why**) the top three reasons |
-| **Trade plan** | Entry, stop, two targets, risk-to-reward, position size from your account and risk %, and a Take / Weak / Skip verdict for each reversal setup, plus an overall "No clear setup" flag |
-| **Nearest liquidity** | The three closest liquidity pools above price (buy-side) and below price (sell-side), each with its distance in %, plus the biggest order-book wall on each side |
-| **Track record** | How often past bias calls and setups were right, graded automatically from later candles |
-| **Indicator matrix** | All 11 indicators' live values and whether it adds Long +5, Short +5 or stays neutral |
-| **Manual inputs** | Optional boxes to override funding rate and the long/short account ratio |
-| **Copy summary** | Copies the five lines plus the two nearest liquidity levels, ready to paste anywhere |
 
 ## Data sources
 
@@ -73,6 +83,8 @@ The header shows which source is active, for example `Crypto.com spot · hourly`
 In browser mode the page tries seven Binance market-data hosts in order until one answers: `data-api.binance.vision`, `api.binance.com`, `api1` to `api4.binance.com`, and `api-gcp.binance.com`. If Binance Futures can't be reached, the funding and long/short rows fall back to the manual boxes.
 
 ## The indicator matrix
+
+<img src="screenshots/indicator-matrix.png" alt="The 11-indicator matrix with live values and Long/Short/Neutral impact chips" width="640">
 
 The bias starts at **50 / 50**. Each indicator moves it by **5 points** toward Long or Short, or leaves it alone. The final value is clamped between 5% and 95%.
 
@@ -104,6 +116,8 @@ Open interest falling while price moves (shorts or longs closing) is shown as a 
 
 ## Support, resistance and liquidity
 
+<img src="screenshots/liquidity.png" alt="Nearest liquidity pools above and below price, with order-book walls" width="640">
+
 All levels come from closed candles only. The candle that is still forming is ignored.
 
 | Level | How it is found |
@@ -118,6 +132,8 @@ All levels come from closed candles only. The candle that is still forming is ig
 The note under the liquidity cards names the **nearer pool**. Price often reaches for the closer pool first, and a quick sweep through it followed by a reversal is a common trap.
 
 ## Reversal watch
+
+<img src="screenshots/reversal-watch.png" alt="Reversal watch: reaches-first split and the two reversal cards" width="480">
 
 For the nearest liquidity pool on each side, the board estimates how likely price is to **turn around there if it reaches the zone**. It's a conditional chance: it says nothing about whether price will get there.
 
@@ -153,6 +169,8 @@ Tap **Why** on a card to see the three factors with the biggest effect. Copy sum
 
 ## Trade plan
 
+<img src="screenshots/trade-plan.png" alt="Trade plan card with entry, stop, targets, size and verdicts" width="480">
+
 Turns each reversal setup into a concrete order, using only the board's own levels. It's a mechanical calculation, not a recommendation.
 
 | Field | How it is set |
@@ -171,7 +189,7 @@ Turns each reversal setup into a concrete order, using only the board's own leve
 | **Weak** | Reversal chance 52–59% (with enough reward) |
 | **Skip** | Reversal chance below 52%, or no target worth 1.5× the risk |
 
-A setup is also shown as off when price has already moved through its zone. The card's headline names the best live setup. If none reaches **Take**, it shows **No clear setup** and says why: waiting is a valid decision. Copy summary adds a `Trade plan:` line.
+Every label carries the reversal chance it's based on: the setup chips read `Take · 66%`, `Weak · 54%` or `Skip · 50%`, and the card's headline chip reads `Setup: Short · 66%`, or `No clear setup · best 54%` when nothing qualifies. A setup is also shown as off when price has already moved through its zone. The card's headline names the best live setup. If none reaches **Take**, it shows **No clear setup** and says why: waiting is a valid decision. Copy summary adds a `Trade plan:` line.
 
 **Risk and reward in money.** Each target shows its ratio as `1 : 2.7`. With an account size entered, the stop row shows the dollar loss (`lose $50`) and each target the dollar gain (`make $137`).
 
@@ -180,6 +198,10 @@ A setup is also shown as off when price has already moved through its zone. The 
 Account size, risk % and the News day switch are saved in your browser only.
 
 ## Track record
+
+<img src="screenshots/track-record.png" alt="Track record card on its first day, before any results are graded" width="640">
+
+*On day one every tile shows a dash; results appear as readings age and get graded.*
 
 The board grades its own calls, so you can see whether its percentages deserve trust.
 
@@ -235,8 +257,11 @@ Leave a box blank to use the live value. Typed values are saved in that browser 
 
 ## Interface
 
-- **Responsive.** Phone: one column, and the indicator table turns into cards. Tablet: the two liquidity panels sit side by side. Desktop (1024px and wider): two columns, with the verdict and trade plan on the left, and liquidity, the matrix and inputs on the right.
+- **Responsive.** Phone: one column, and the indicator table turns into cards. Tablet: the two liquidity panels sit side by side. Desktop (1024px and wider): two columns, with the decision card and trade plan on the left, and reversal watch, liquidity, the matrix, inputs and track record on the right.
 - **Light and dark themes** follow the device setting.
+
+  <img src="screenshots/desktop-light.png" alt="Signal Board on desktop, light theme" width="640">
+
 - **Refresh animation.** The icon spins and a progress line sweeps the button. Values dim while loading. When data arrives, the price counts to its new value with a green or red glow showing which way it moved since the last refresh, changed indicators flash, and the button shows **Updated** (or **Failed**, with a shake).
 - **No layout jumping.** Placeholders reserve the space real values will take, and the refresh button has a fixed width, so nothing moves during load or refresh.
 - **Reduced motion.** With the device's "reduce motion" setting on, animations are switched off.
@@ -251,13 +276,19 @@ ethusdt-signal-board/
 │   ├── engine.js       All calculations: EMA, RSI, ATR, swing pivots, scoring, liquidity pools
 │   └── page.src.html   Layout, styles, data fetching (Crypto.com and Binance), animations
 └── screenshots/
-    ├── desktop-dark.png
-    ├── desktop-light.png
-    ├── mobile-dark.png
-    └── mobile-light.png
+    ├── desktop-dark.png      Full page, dark theme
+    ├── desktop-light.png     Full page, light theme
+    ├── mobile-dark.png       Phone, first screen, dark
+    ├── mobile-light.png      Phone, first screen, light
+    ├── decision-card.png
+    ├── indicator-matrix.png
+    ├── liquidity.png
+    ├── reversal-watch.png
+    ├── trade-plan.png
+    └── track-record.png
 ```
 
-The page is self-contained. It needs no build tools, packages or server, and the only external request besides market data is the IBM Plex font from Google Fonts. Without the font it falls back to the system font.
+The page is self-contained. It needs no build tools, packages or server, and the only external request besides market data is the Geist and Geist Mono fonts from Google Fonts. Without the font it falls back to the system font.
 
 After editing anything in `src/`, rebuild:
 
