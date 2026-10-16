@@ -225,6 +225,7 @@ If the entry or the stop and the target fall inside the same 4H candle, the orde
 1. Connect the **Crypto.com** connector in claude.ai (no account or API key needed).
 2. Open the published artifact. The first time, allow it to use Crypto.com.
 3. It loads immediately and refreshes every hour while open.
+4. The header shows a **Binance version ↗** link to the hosted site (Option 3) for real Binance funding and long/short values, which no connector provides inside claude.ai.
 
 ### Option 2: in a browser (Binance data)
 
@@ -244,7 +245,11 @@ If it shows a price, the board will work. If not, Binance is blocked on that net
 
 1. In this repository go to **Settings → Pages**.
 2. Under **Build and deployment**, choose **Deploy from a branch**, branch `main`, folder `/ (root)`.
-3. Open `https://chiefmahesh.github.io/ethusdt-signal-board/`. It runs in browser mode with Binance data.
+3. Open the site. This repo's board is live at **[chiefmahesh.com/ethusdt-signal-board](https://chiefmahesh.com/ethusdt-signal-board/)** (GitHub Pages, redirected from `chiefmahesh.github.io` to the custom domain). It runs in browser mode with live Binance data, including the real funding rate, the long/short account ratio, open-interest history and liquidations, so the manual boxes can stay blank.
+
+This is the recommended way to use the board in a browser: it opens in Chrome like any website, with no download and no file viewer in between.
+
+If the funding and long/short rows say they fell back to the manual boxes, your network is blocking Binance Futures (`fapi.binance.com`, which has no backup address). Mobile data usually works. To test, open `https://fapi.binance.com/fapi/v1/premiumIndex?symbol=ETHUSDT`: a line of numbers means the board will get live funding.
 
 ## Manual inputs
 

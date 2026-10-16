@@ -38,6 +38,9 @@ section { min-width: 0; }
 header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; }
 h1 { margin: 0; font-family: var(--font-data); font-size: clamp(19px, 4.5vw, 24px); font-weight: 600; letter-spacing: 0.02em; text-wrap: balance; }
 h1 small { font-family: var(--font-body); font-size: 13px; font-weight: 400; color: var(--muted); letter-spacing: 0; margin-left: 8px; white-space: nowrap; }
+.srclink { font-family: var(--font-body); font-size: 13px; font-weight: 500; letter-spacing: 0; margin-left: 10px; color: var(--accent); text-decoration: none; white-space: nowrap; }
+.srclink:hover { text-decoration: underline; }
+.srclink:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
 .meta { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; display: flex; gap: 8px 12px; flex-wrap: wrap; align-items: center; }
 .stat { display: flex; flex-wrap: wrap; gap: 2px 12px; }
 .stat > span { white-space: nowrap; }
@@ -115,6 +118,7 @@ td.imp { font-family: var(--font-data); font-weight: 600; white-space: nowrap; t
 .field span { color: var(--muted); }
 input { font-family: var(--font-data); font-size: 15px; color: var(--fg); background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; width: 100%; box-sizing: border-box; min-height: 44px; font-size: 16px; }
 .note { font-size: 13px; color: var(--muted); max-width: 75ch; margin: 0; }
+.note a { color: var(--accent); font-weight: 500; }
 .msg { border: 1px solid var(--warn); border-radius: 8px; padding: 10px 12px; font-size: 14px; }
 .empty { color: var(--muted); }
 @media (max-width: 400px) { .line { grid-template-columns: 1fr; gap: 0; } .bar { font-size: 12px; } .bar div { padding-inline: 8px; } }
@@ -284,7 +288,7 @@ input { font-family: var(--font-data); font-size: 15px; color: var(--fg); backgr
 
 <div class="wrap">
   <header>
-    <h1>ETHUSDT <small id="src">connecting · hourly</small></h1>
+    <h1>ETHUSDT <small id="src">connecting · hourly</small><a class="srclink" id="binLink" href="https://chiefmahesh.com/ethusdt-signal-board/" target="_blank" rel="noopener" hidden>Binance version ↗</a></h1>
     <div class="meta">
       <div class="stat"><span id="status"><span class="dot" id="dot"></span><span id="statusText">Connecting…</span></span>
       <span id="next">&nbsp;</span></div>
@@ -356,7 +360,7 @@ input { font-family: var(--font-data); font-size: 15px; color: var(--fg); backgr
           <div class="ps-st" id="pllongSt">&nbsp;</div>
         </div>
     </div>
-    <p class="note">Mechanical calculation from the board's own levels, not a recommendation. Entry is a limit order at the zone's near edge. The stop sits half a 4H range beyond the zone. <b>Take</b> needs a reversal chance of 60% or more (65% when the overall bias is near 50/50) and a target worth at least 1 : 1.5; 52–59% is <b>Weak</b>; anything else is <b>Skip</b>. On a news day every Take becomes Weak. Edge is what the setup earns per trade, in units of the amount risked, if the reversal chance is right.</p>
+    <p class="note" hidden>Mechanical calculation from the board's own levels, not a recommendation. Entry is a limit order at the zone's near edge. The stop sits half a 4H range beyond the zone. <b>Take</b> needs a reversal chance of 60% or more (65% when the overall bias is near 50/50) and a target worth at least 1 : 1.5; 52–59% is <b>Weak</b>; anything else is <b>Skip</b>. On a news day every Take becomes Weak. Edge is what the setup earns per trade, in units of the amount risked, if the reversal chance is right.</p>
   </section>
 
   </div>
@@ -426,7 +430,7 @@ input { font-family: var(--font-data); font-size: 15px; color: var(--fg); backgr
       <label class="field" for="funding"><span>Binance funding % override (blank = use live perp premium)</span><input id="funding" type="number" step="0.0001" inputmode="decimal" placeholder="blank = live proxy"></label>
       <label class="field" for="lsLong"><span>Long accounts % (Binance L/S, e.g. 65)</span><input id="lsLong" type="number" step="1" min="0" max="100" inputmode="decimal" placeholder="blank = neutral"></label>
     </div>
-    <p class="note" id="manualNote" style="margin-top:8px">Binance can't be reached from this page. Funding is scored live from the gap between Crypto.com's ETH perpetual and the spot index: +0.05% or more is crowded longs (short +5), −0.05% or less is long +5. Type a Binance funding rate to override it. No free connector offers a long/short account ratio, so that box stays manual. Typed values are saved in this browser only. Typed funding of 0.03% or more counts as short +5 (0.01% is Binance's normal baseline); negative funding counts as long +5. A typed long-accounts value has no history to compare against, so it uses wide bands: 70% or more is short +5, 45% or less is long +5.</p>
+    <p class="note" id="manualNote" style="margin-top:8px">Funding is estimated from the perpetual premium; long/short has no live feed here. For live Binance values, open the <a href="https://chiefmahesh.com/ethusdt-signal-board/" target="_blank" rel="noopener">Binance version</a>. Type a value to override; saved in this browser only.</p>
   </section>
 
   <section class="track" aria-live="polite">
@@ -441,7 +445,7 @@ input { font-family: var(--font-data); font-size: 15px; color: var(--fg); backgr
   </div>
   </div>
 
-  <p class="note">Data source: opened inside claude.ai the page uses the Crypto.com connector; opened as a downloaded file in your browser it pulls Binance directly (spot, plus funding, open interest and the long/short account ratio from Binance Futures). Method: support is the lowest 4H low of the last ~8 days; resistance is the nearest 4H swing high above price. The EMA stack adds EMA 100 when enough candles are available (Binance). Taker flow uses recent trades as a stand-in for CVD. Liquidity pools are untouched 4H and 1D swing highs and lows, where stop orders usually sit; a real liquidation heatmap is not available from any free feed. Order book walls are limited to the depth each feed returns. This is a rule-based read of the data, not financial advice.</p>
+  <p class="note" hidden>Data source: opened inside claude.ai the page uses the Crypto.com connector; opened as a downloaded file in your browser it pulls Binance directly (spot, plus funding, open interest and the long/short account ratio from Binance Futures). Method: support is the lowest 4H low of the last ~8 days; resistance is the nearest 4H swing high above price. The EMA stack adds EMA 100 when enough candles are available (Binance). Taker flow uses recent trades as a stand-in for CVD. Liquidity pools are untouched 4H and 1D swing highs and lows, where stop orders usually sit; a real liquidation heatmap is not available from any free feed. Order book walls are limited to the depth each feed returns. This is a rule-based read of the data, not financial advice.</p>
 </div>
 
 <script>
@@ -1527,7 +1531,7 @@ input { font-family: var(--font-data); font-size: 15px; color: var(--fg); backgr
     if (!mcp) {
       mode = "binance";
       $("src").textContent = "Binance spot + futures · hourly";
-      $("manualNote").textContent = "Funding rate, open interest and the long/short account ratio load live from Binance Futures. Type a value to override it; typed values are saved in this browser only. Funding of 0.03% or more counts as short +5 (0.01% is Binance's normal baseline); negative funding counts as long +5. The long/short ratio is compared with its own last 5 days: 1.5 standard deviations above average is short +5, 1.5 below is long +5. A typed long-accounts value uses wide 70/45 bands instead.";
+      $("manualNote").textContent = "Funding and long/short load live from Binance. Type a value to override; saved in this browser only.";
       fetchBinance();
       setInterval(fetchBinance, HOUR);
       liqConnect();
@@ -1535,6 +1539,7 @@ input { font-family: var(--font-data); font-size: 15px; color: var(--fg); backgr
       return;
     }
     $("src").textContent = "Crypto.com spot · hourly";
+    $("binLink").hidden = false;
     for (const w of WATCHES) {
       mcp.watchTool(SERVER, w.tool, w.input, ev => onEvent(w.key, ev), { cache: { staleTime: 60000 }, refetchInterval: HOUR });
     }
